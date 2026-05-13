@@ -1,4 +1,4 @@
-import { ActivityType } from '../user/user';
+import { ActivityType } from '../enums';
 export interface ActivityLog {
   /**
    * DynamoDB PK

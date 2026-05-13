@@ -1,4 +1,4 @@
-import { TaskStatus } from '../user/user';
+import { TaskStatus } from '../enums';
 export interface AuditLog {
   /**
    * Recommended DynamoDB key design:
