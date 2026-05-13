@@ -1,5 +1,5 @@
 import { TaskImage } from '../taskImage/taskimage';
-import { UserRole } from '../user/user';
+import { UserRole } from '../enums';
 export interface Comment {
   /**
    * Recommended DynamoDB key design:
@@ -14,12 +14,6 @@ export interface Comment {
   userRole: UserRole;
 
   text: string;
-
-  /**
-   * Optional if you allow attachments in comments later.
-   * Not required, but okay to keep optional.
-   */
-  attachment?: TaskImage | null;
 
   createdAt: string;
   updatedAt?: string;

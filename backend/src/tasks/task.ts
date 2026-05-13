@@ -1,5 +1,6 @@
 import { TaskImage } from '../taskImage/taskimage';
-import { TaskStatus } from '../user/user';
+import { TaskStatus } from '../enums';
+import { TaskPriority } from '../enums';
 export interface Task {
   /**
    * DynamoDB PK
