@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
@@ -9,17 +10,20 @@ import {
   QueryCommand,
   ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
+import { dynamoDbTableConfig, DynamoDbTableName } from './aws.config';
 
 @Injectable()
 export class DynamoDBService {
   private readonly client: DynamoDBDocumentClient;
+  readonly tables: Record<DynamoDbTableName, string>;
 
-  constructor() {
+  constructor(private readonly configService: ConfigService) {
     const dynamoClient = new DynamoDBClient({
-      region: process.env.AWS_REGION,
+      region: this.configService.getOrThrow<string>('AWS_REGION'),
     });
 
     this.client = DynamoDBDocumentClient.from(dynamoClient);
+    this.tables = this.resolveTables();
   }
 
   put(params: ConstructorParameters<typeof PutCommand>[0]) {
@@ -44,5 +48,18 @@ export class DynamoDBService {
 
   scan(params: ConstructorParameters<typeof ScanCommand>[0]) {
     return this.client.send(new ScanCommand(params));
+  }
+
+  table(name: DynamoDbTableName) {
+    return this.tables[name];
+  }
+
+  private resolveTables(): Record<DynamoDbTableName, string> {
+    return Object.fromEntries(
+      Object.entries(dynamoDbTableConfig).map(([name, config]) => [
+        name,
+        this.configService.get<string>(config.envKey),
+      ]),
+    ) as Record<DynamoDbTableName, string>;
   }
 }
