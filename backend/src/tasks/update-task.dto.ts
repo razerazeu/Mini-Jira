@@ -4,7 +4,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { TaskPriority } from '../enums';
+import { TaskPriority, TaskStatus } from '../enums';
 
 export class UpdateTaskDto {
   @IsString()
@@ -26,6 +26,14 @@ export class UpdateTaskDto {
   @IsDateString()
   @IsOptional()
   deadline?: string;
+
+  @IsEnum(TaskStatus)
+  @IsOptional()
+  status?: TaskStatus;
+
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 
   @IsString()
   @IsOptional()
