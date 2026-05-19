@@ -37,7 +37,8 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -64,7 +65,18 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
+    ,"@types/uuid": "^9.0.0"
   },
+  "dependenciesMeta": {
+    "uuid": {
+      "built": false
+    }
+  },
+  "optionalDependencies": {},
+  "engines": {
+    "node": ">=18"
+  }
+,
   "jest": {
     "moduleFileExtensions": [
       "js",
