@@ -35,6 +35,22 @@ export class ProjectService {
     return project;
   }
 
+  async adjustTaskCount(projectId: string, delta: number) {
+    const project = await this.findOne(projectId);
+
+    project.totalTasks = Math.max(0, (project.totalTasks || 0) + delta);
+    project.updatedAt = new Date().toISOString();
+
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: project,
+      });
+    }
+
+    return project;
+  }
+
   async findAll() {
     if (this.useDynamo) {
       const result = await this.dynamo.scan({ TableName: this.tableName });

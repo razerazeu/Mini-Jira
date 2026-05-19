@@ -8,5 +8,6 @@ import { ProjectService } from './project.service';
   imports: [AwsModule],
   controllers: [ProjectController],
   providers: [ProjectService],
+  exports: [ProjectService],
 })
 export class ProjectModule {}

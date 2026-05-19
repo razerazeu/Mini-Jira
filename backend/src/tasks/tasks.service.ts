@@ -13,6 +13,7 @@ import { UpdateTaskStatusDto } from './update-task-status.dto';
 import { Task } from './task';
 import { S3Service } from '../aws/s3.service';
 import { DynamoDBService } from '../aws/dynamodb.service';
+import { ProjectService } from '../project/project.service';
 
 @Injectable()
 export class TasksService {
@@ -23,6 +24,7 @@ export class TasksService {
   constructor(
     private readonly s3: S3Service,
     private readonly dynamo: DynamoDBService,
+    private readonly projectService: ProjectService,
   ) {
     this.tableName = this.dynamo.table('tasks');
     this.useDynamo = process.env.USE_DYNAMODB === 'true' && !!this.tableName;
@@ -39,6 +41,11 @@ export class TasksService {
     } else {
       this.tasks.push(task);
     }
+
+    await this.projectService.adjustTaskCount(
+      createTaskDto.projectId,
+      1,
+    );
 
     return task;
   }
@@ -224,6 +231,11 @@ export class TasksService {
         (t) => t.id !== id,
       );
     }
+
+    await this.projectService.adjustTaskCount(
+      task.projectId,
+      -1,
+    );
 
     return {
       message: 'Task deleted successfully',
