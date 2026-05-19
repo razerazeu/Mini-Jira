@@ -1,34 +1,29 @@
-// ensure the real cognito guard is not registered in AuthModule during tests
-process.env.SKIP_AUTH = 'true';
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { APP_GUARD } from '@nestjs/core';
 import { S3Service } from '../src/aws/s3.service';
+import jwt from 'jsonwebtoken';
+
+const authHeader = { Authorization: 'Bearer test-token' };
 
 describe('API smoke tests', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    // ensure the real cognito guard is not registered in AuthModule
-    process.env.SKIP_AUTH = 'true';
-    const mockGuard = {
-      canActivate: (ctx: any) => {
-        // debug: indicate mock guard was invoked
-        // eslint-disable-next-line no-console
-        console.log('mockGuard invoked');
-        const req = ctx.switchToHttp().getRequest();
-        req.user = {
-          userId: 'test-user',
-          name: 'Test User',
-          role: 'manager',
-          teamId: 'team-1',
-        };
-        return true;
-      },
-    };
+    process.env.USE_DYNAMODB = 'false';
+    jest.spyOn(jwt, 'verify').mockImplementation((token, getKey, options, callback) => {
+      callback(null, {
+        sub: 'test-user',
+        client_id: '3a3ch08jvain113or80pcgqq08',
+        email: 'test@example.com',
+        name: 'Test User',
+        'custom:role': 'manager',
+        'custom:teamId': 'team-1',
+        'cognito:groups': [],
+        token_use: 'access',
+      } as any);
+    });
 
     const mockS3 = {
       uploadObject: async () => ({ VersionId: 'v1' }),
@@ -38,16 +33,11 @@ describe('API smoke tests', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideProvider(APP_GUARD)
-      .useValue(mockGuard)
       .overrideProvider(S3Service)
       .useValue(mockS3)
       .compile();
 
     app = moduleFixture.createNestApplication();
-    // ensure our mock guard is applied at app level in case APP_GUARD from module still runs
-    // (this overrides module-level guards for the test application)
-    app.useGlobalGuards(mockGuard as any);
     await app.init();
   });
 
@@ -59,6 +49,7 @@ describe('API smoke tests', () => {
     // create project
     const projectRes = await request(app.getHttpServer())
       .post('/projects')
+      .set(authHeader)
       .send({ name: 'smoke project', description: 'for smoke' })
       .expect(201);
 
@@ -67,6 +58,7 @@ describe('API smoke tests', () => {
     // create task
     const taskRes = await request(app.getHttpServer())
       .post('/tasks')
+      .set(authHeader)
       .send({
         projectId: project.id,
         title: 'smoke task',
@@ -83,12 +75,14 @@ describe('API smoke tests', () => {
     // add comment
     const commentRes = await request(app.getHttpServer())
       .post(`/tasks/${task.id}/comments`)
+      .set(authHeader)
       .send({ text: 'nice' })
       .expect(201);
 
     // list comments
     await request(app.getHttpServer())
       .get(`/tasks/${task.id}/comments`)
+      .set(authHeader)
       .expect(200)
       .expect((res) => {
         if (!Array.isArray(res.body)) throw new Error('comments not array');
@@ -97,18 +91,21 @@ describe('API smoke tests', () => {
     // upload image (mocked S3)
     await request(app.getHttpServer())
       .post(`/tasks/${task.id}/image`)
+      .set(authHeader)
       .attach('file', Buffer.from('abc'), 'a.txt')
       .expect(201);
 
     // replace image
     await request(app.getHttpServer())
       .put(`/tasks/${task.id}/image`)
+      .set(authHeader)
       .attach('file', Buffer.from('def'), 'b.txt')
       .expect(200);
 
     // delete image
     await request(app.getHttpServer())
       .delete(`/tasks/${task.id}/image`)
+      .set(authHeader)
       .expect(200);
   }, 20000);
 });

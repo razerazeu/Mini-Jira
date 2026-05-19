@@ -5,15 +5,13 @@ import { AuthController } from './auth.controller';
 import { CognitoAuthGuard } from './cognito-auth.guard';
 import { CognitoService } from './cognito.service';
 
-const providers = [CognitoService];
-
-// allow tests or local runs to skip Cognito guard by setting SKIP_AUTH=true
-if (process.env.SKIP_AUTH !== 'true') {
-  providers.push({
+const providers: any[] = [
+  CognitoService,
+  {
     provide: APP_GUARD,
     useClass: CognitoAuthGuard,
-  });
-}
+  },
+];
 
 @Module({
   imports: [AwsModule],

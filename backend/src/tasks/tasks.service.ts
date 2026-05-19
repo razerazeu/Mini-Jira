@@ -12,52 +12,55 @@ import { UpdateTaskStatusDto } from './update-task-status.dto';
 
 import { Task } from './task';
 import { S3Service } from '../aws/s3.service';
+import { DynamoDBService } from '../aws/dynamodb.service';
 
 @Injectable()
 export class TasksService {
   private tasks: any[] = [];
+  private readonly tableName?: string;
+  private readonly useDynamo: boolean;
 
-  constructor(private readonly s3: S3Service) {}
+  constructor(
+    private readonly s3: S3Service,
+    private readonly dynamo: DynamoDBService,
+  ) {
+    this.tableName = this.dynamo.table('tasks');
+    this.useDynamo = process.env.USE_DYNAMODB === 'true' && !!this.tableName;
+  }
 
-  create(createTaskDto: CreateTaskDto) {
-    const task: any = {
-      id: uuid(),
+  async create(createTaskDto: CreateTaskDto) {
+    const task = this.buildTask(createTaskDto);
 
-      title: createTaskDto.title,
-      description: createTaskDto.description,
-
-      priority: createTaskDto.priority,
-      status: createTaskDto.status,
-
-      // deadline is provided as an ISO date string by the DTO
-      deadline: createTaskDto.deadline,
-
-      assigneeId: createTaskDto.assigneeId,
-      teamId: createTaskDto.teamId,
-
-      imageUrl: createTaskDto.imageUrl,
-
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.tasks.push(task);
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: task,
+      });
+    } else {
+      this.tasks.push(task);
+    }
 
     return task;
   }
 
-  findAll(user: any) {
+  async findAll(user: any) {
+    const items = this.useDynamo
+      ? ((await this.dynamo.scan({ TableName: this.tableName })).Items || [])
+      : this.tasks;
+
     if (user.role === 'manager') {
-      return this.tasks;
+      return items;
     }
 
-    return this.tasks.filter(
+    return items.filter(
       (task) => task.teamId === user.teamId,
     );
   }
 
-  findOne(id: string, user: any) {
-    const task = this.tasks.find((t) => t.id === id);
+  async findOne(id: string, user: any) {
+    const task = this.useDynamo
+      ? await this.getTaskFromTable(id)
+      : this.tasks.find((t) => t.id === id);
 
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -75,30 +78,46 @@ export class TasksService {
     return task;
   }
 
-  update(
+  async update(
     id: string,
     updateTaskDto: UpdateTaskDto,
     user: any,
   ) {
     const task = this.findOne(id, user);
 
-    Object.assign(task, updateTaskDto);
+    const resolvedTask = await task;
 
-    task.updatedAt = new Date().toISOString();
+    Object.assign(resolvedTask, updateTaskDto);
 
-    return task;
+    resolvedTask.updatedAt = new Date().toISOString();
+
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: resolvedTask,
+      });
+    }
+
+    return resolvedTask;
   }
 
-  updateStatus(
+  async updateStatus(
     id: string,
     dto: UpdateTaskStatusDto,
     user: any,
   ) {
-    const task = this.findOne(id, user);
+    const task = await this.findOne(id, user);
 
     task.status = dto.status;
 
     task.updatedAt = new Date().toISOString();
+
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: task,
+      });
+    }
 
     return task;
   }
@@ -108,7 +127,7 @@ export class TasksService {
     file: any,
     user: any,
   ) {
-    const task = this.findOne(id, user);
+    const task = await this.findOne(id, user);
 
     if (!file) {
       throw new NotFoundException('No file provided');
@@ -150,6 +169,13 @@ export class TasksService {
     task.image = image;
     task.updatedAt = new Date().toISOString();
 
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: task,
+      });
+    }
+
     return image;
   }
 
@@ -161,8 +187,8 @@ export class TasksService {
     return this.uploadImage(id, file, user);
   }
 
-  deleteImage(id: string, user: any) {
-    const task = this.findOne(id, user);
+  async deleteImage(id: string, user: any) {
+    const task = await this.findOne(id, user);
 
     if (!task.image) {
       throw new NotFoundException('No image attached to this task');
@@ -175,19 +201,63 @@ export class TasksService {
     task.image = null;
     task.updatedAt = new Date().toISOString();
 
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: task,
+      });
+    }
+
     return { message: 'Image detached from task' };
   }
 
-  remove(id: string, user: any) {
-    const task = this.findOne(id, user);
+  async remove(id: string, user: any) {
+    const task = await this.findOne(id, user);
 
-    this.tasks = this.tasks.filter(
-      (t) => t.id !== id,
-    );
+    if (this.useDynamo) {
+      await this.dynamo.delete({
+        TableName: this.tableName,
+        Key: { taskId: id },
+      });
+    } else {
+      this.tasks = this.tasks.filter(
+        (t) => t.id !== id,
+      );
+    }
 
     return {
       message: 'Task deleted successfully',
       task,
     };
+  }
+
+  private buildTask(createTaskDto: CreateTaskDto) {
+    const now = new Date().toISOString();
+    const id = uuid();
+
+    return {
+      id,
+      taskId: id,
+      projectId: createTaskDto.projectId,
+      title: createTaskDto.title,
+      description: createTaskDto.description,
+      priority: createTaskDto.priority,
+      status: createTaskDto.status,
+      deadline: createTaskDto.deadline,
+      assigneeId: createTaskDto.assigneeId,
+      teamId: createTaskDto.teamId,
+      imageUrl: createTaskDto.imageUrl,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  private async getTaskFromTable(id: string) {
+    const result = await this.dynamo.get({
+      TableName: this.tableName,
+      Key: { taskId: id },
+    });
+
+    return result.Item ?? null;
   }
 }

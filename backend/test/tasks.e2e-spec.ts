@@ -1,32 +1,44 @@
-// ensure AuthModule doesn't register the real Cognito guard
-process.env.SKIP_AUTH = 'true';
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { S3Service } from '../src/aws/s3.service';
+import jwt from 'jsonwebtoken';
+
+const managerAuth = { Authorization: 'Bearer manager-1' };
+const otherAuth = { Authorization: 'Bearer user-2' };
 
 describe('Tasks API behaviors', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const mockGuard = {
-      canActivate: (ctx: any) => {
-        const req = ctx.switchToHttp().getRequest();
-        const header = req.headers['x-test-user'];
-        if (header) {
-          try {
-            req.user = JSON.parse(Array.isArray(header) ? header[0] : header);
-          } catch {
-            req.user = { userId: 'bad', role: 'user', teamId: 'team-B' };
+    process.env.USE_DYNAMODB = 'false';
+    jest.spyOn(jwt, 'verify').mockImplementation((token, getKey, options, callback) => {
+      const tokenText = String(token);
+      const payload = tokenText.includes('user-2')
+        ? {
+            sub: 'user-2',
+            client_id: '3a3ch08jvain113or80pcgqq08',
+            email: 'other@example.com',
+            name: 'Other User',
+            'custom:role': 'user',
+            'custom:teamId': 'team-B',
+            'cognito:groups': [],
+            token_use: 'access',
           }
-        } else {
-          req.user = { userId: 'manager-1', name: 'Manager', role: 'manager', teamId: 'team-A' };
-        }
-        return true;
-      },
-    };
+        : {
+            sub: 'manager-1',
+            client_id: '3a3ch08jvain113or80pcgqq08',
+            email: 'manager@example.com',
+            name: 'Manager',
+            'custom:role': 'manager',
+            'custom:teamId': 'team-A',
+            'cognito:groups': [],
+            token_use: 'access',
+          };
+
+      callback(null, payload as any);
+    });
 
     const mockS3 = {
       uploadObject: async () => ({ VersionId: 'v1' }),
@@ -41,7 +53,6 @@ describe('Tasks API behaviors', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalGuards(mockGuard as any);
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
     );
@@ -55,6 +66,7 @@ describe('Tasks API behaviors', () => {
   it('validates DTO on create (400)', async () => {
     await request(app.getHttpServer())
       .post('/tasks')
+      .set(managerAuth)
       .send({ projectId: 'p1', priority: 'MEDIUM', deadline: new Date().toISOString(), assigneeId: 'u1', teamId: 'team-A' })
       .expect(400);
   });
@@ -63,6 +75,7 @@ describe('Tasks API behaviors', () => {
     // create project
     const p = await request(app.getHttpServer())
       .post('/projects')
+      .set(managerAuth)
       .send({ name: 'tproj', description: 'x' })
       .expect(201);
 
@@ -71,6 +84,7 @@ describe('Tasks API behaviors', () => {
     // create task as manager team-A (default)
     const tRes = await request(app.getHttpServer())
       .post('/tasks')
+      .set(managerAuth)
       .send({
         projectId: project.id,
         title: 'task A',
@@ -87,6 +101,7 @@ describe('Tasks API behaviors', () => {
     // update as same team manager
     await request(app.getHttpServer())
       .put(`/tasks/${task.id}`)
+      .set(managerAuth)
       .send({ title: 'task A updated' })
       .expect(200)
       .expect((res) => {
@@ -96,6 +111,7 @@ describe('Tasks API behaviors', () => {
     // status update as same team
     await request(app.getHttpServer())
       .patch(`/tasks/${task.id}/status`)
+      .set(managerAuth)
       .send({ status: 'IN_PROGRESS' })
       .expect(200)
       .expect((res) => {
@@ -103,28 +119,27 @@ describe('Tasks API behaviors', () => {
       });
 
     // attempt actions as a user from another team -> expect 403
-    const otherUser = JSON.stringify({ userId: 'u2', role: 'user', teamId: 'team-B' });
-
     await request(app.getHttpServer())
       .put(`/tasks/${task.id}`)
-      .set('x-test-user', otherUser)
+      .set(otherAuth)
       .send({ title: 'bad update' })
       .expect(403);
 
     await request(app.getHttpServer())
       .patch(`/tasks/${task.id}/status`)
-      .set('x-test-user', otherUser)
+      .set(otherAuth)
       .send({ status: 'DONE' })
       .expect(403);
 
     await request(app.getHttpServer())
       .delete(`/tasks/${task.id}`)
-      .set('x-test-user', otherUser)
+      .set(otherAuth)
       .expect(403);
 
     // delete as original manager
     await request(app.getHttpServer())
       .delete(`/tasks/${task.id}`)
+      .set(managerAuth)
       .expect(200)
       .expect((res) => {
         if (!res.body.message) throw new Error('no delete message');
