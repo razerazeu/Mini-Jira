@@ -5,16 +5,18 @@ import { AuthController } from './auth.controller';
 import { CognitoAuthGuard } from './cognito-auth.guard';
 import { CognitoService } from './cognito.service';
 
+const providers: any[] = [
+  CognitoService,
+  {
+    provide: APP_GUARD,
+    useClass: CognitoAuthGuard,
+  },
+];
+
 @Module({
   imports: [AwsModule],
   controllers: [AuthController],
-  providers: [
-    CognitoService,
-    {
-      provide: APP_GUARD,
-      useClass: CognitoAuthGuard,
-    },
-  ],
+  providers,
   exports: [CognitoService],
 })
 export class AuthModule {}

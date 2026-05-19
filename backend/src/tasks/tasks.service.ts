@@ -11,49 +11,63 @@ import { UpdateTaskDto } from './update-task.dto';
 import { UpdateTaskStatusDto } from './update-task-status.dto';
 
 import { Task } from './task';
+import { S3Service } from '../aws/s3.service';
+import { DynamoDBService } from '../aws/dynamodb.service';
+import { ProjectService } from '../project/project.service';
+
 @Injectable()
 export class TasksService {
   private tasks: any[] = [];
+  private readonly tableName?: string;
+  private readonly useDynamo: boolean;
 
-  create(createTaskDto: CreateTaskDto) {
-    const task: any = {
-      id: uuid(),
+  constructor(
+    private readonly s3: S3Service,
+    private readonly dynamo: DynamoDBService,
+    private readonly projectService: ProjectService,
+  ) {
+    this.tableName = this.dynamo.table('tasks');
+    this.useDynamo = process.env.USE_DYNAMODB === 'true' && !!this.tableName;
+  }
 
-      title: createTaskDto.title,
-      description: createTaskDto.description,
+  async create(createTaskDto: CreateTaskDto) {
+    const task = this.buildTask(createTaskDto);
 
-      priority: createTaskDto.priority,
-      status: createTaskDto.status,
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: task,
+      });
+    } else {
+      this.tasks.push(task);
+    }
 
-      // deadline is provided as an ISO date string by the DTO
-      deadline: createTaskDto.deadline,
-
-      assigneeId: createTaskDto.assigneeId,
-      teamId: createTaskDto.teamId,
-
-      imageUrl: createTaskDto.imageUrl,
-
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.tasks.push(task);
+    await this.projectService.adjustTaskCount(
+      createTaskDto.projectId,
+      1,
+    );
 
     return task;
   }
 
-  findAll(user: any) {
+  async findAll(user: any) {
+    const items = this.useDynamo
+      ? ((await this.dynamo.scan({ TableName: this.tableName })).Items || [])
+      : this.tasks;
+
     if (user.role === 'manager') {
-      return this.tasks;
+      return items;
     }
 
-    return this.tasks.filter(
+    return items.filter(
       (task) => task.teamId === user.teamId,
     );
   }
 
-  findOne(id: string, user: any) {
-    const task = this.tasks.find((t) => t.id === id);
+  async findOne(id: string, user: any) {
+    const task = this.useDynamo
+      ? await this.getTaskFromTable(id)
+      : this.tasks.find((t) => t.id === id);
 
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -71,44 +85,191 @@ export class TasksService {
     return task;
   }
 
-  update(
+  async update(
     id: string,
     updateTaskDto: UpdateTaskDto,
     user: any,
   ) {
     const task = this.findOne(id, user);
 
-    Object.assign(task, updateTaskDto);
+    const resolvedTask = await task;
 
-    task.updatedAt = new Date().toISOString();
+    Object.assign(resolvedTask, updateTaskDto);
 
-    return task;
+    resolvedTask.updatedAt = new Date().toISOString();
+
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: resolvedTask,
+      });
+    }
+
+    return resolvedTask;
   }
 
-  updateStatus(
+  async updateStatus(
     id: string,
     dto: UpdateTaskStatusDto,
     user: any,
   ) {
-    const task = this.findOne(id, user);
+    const task = await this.findOne(id, user);
 
     task.status = dto.status;
 
     task.updatedAt = new Date().toISOString();
 
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: task,
+      });
+    }
+
     return task;
   }
 
-  remove(id: string, user: any) {
-    const task = this.findOne(id, user);
+  async uploadImage(
+    id: string,
+    file: any,
+    user: any,
+  ) {
+    const task = await this.findOne(id, user);
 
-    this.tasks = this.tasks.filter(
-      (t) => t.id !== id,
+    if (!file) {
+      throw new NotFoundException('No file provided');
+    }
+
+    const bucket = process.env.S3_ORIGINALS_BUCKET ?? process.env.S3_BUCKET;
+    if (!bucket) {
+      throw new Error('S3 bucket not configured (S3_ORIGINALS_BUCKET)');
+    }
+
+    const key = `tasks/${task.id}/${uuid()}_${file.originalname}`;
+
+    const res: any = await this.s3.uploadObject({
+      Bucket: bucket,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    });
+
+    const image = {
+      originalBucket: bucket,
+      originalKey: key,
+      originalVersionId: res?.VersionId,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      sizeBytes: file.size,
+      uploadedBy: user?.sub || user?.userId || user?.id || 'unknown',
+      uploadedAt: new Date().toISOString(),
+      isActive: true,
+    };
+
+    // keep previous active image as history
+    if (task.image) {
+      task.previousImages = task.previousImages || [];
+      task.previousImages.push(task.image);
+      task.image.isActive = false;
+    }
+
+    task.image = image;
+    task.updatedAt = new Date().toISOString();
+
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: task,
+      });
+    }
+
+    return image;
+  }
+
+  async replaceImage(
+    id: string,
+    file: any,
+    user: any,
+  ) {
+    return this.uploadImage(id, file, user);
+  }
+
+  async deleteImage(id: string, user: any) {
+    const task = await this.findOne(id, user);
+
+    if (!task.image) {
+      throw new NotFoundException('No image attached to this task');
+    }
+
+    // mark current image inactive and keep it in history
+    task.previousImages = task.previousImages || [];
+    task.previousImages.push(task.image);
+    task.image.isActive = false;
+    task.image = null;
+    task.updatedAt = new Date().toISOString();
+
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: task,
+      });
+    }
+
+    return { message: 'Image detached from task' };
+  }
+
+  async remove(id: string, user: any) {
+    const task = await this.findOne(id, user);
+
+    if (this.useDynamo) {
+      await this.dynamo.delete({
+        TableName: this.tableName,
+        Key: { taskId: id },
+      });
+    } else {
+      this.tasks = this.tasks.filter(
+        (t) => t.id !== id,
+      );
+    }
+
+    await this.projectService.adjustTaskCount(
+      task.projectId,
+      -1,
     );
 
     return {
       message: 'Task deleted successfully',
       task,
     };
+  }
+
+  private buildTask(createTaskDto: CreateTaskDto) {
+    const now = new Date().toISOString();
+    const id = uuid();
+
+    return {
+      id,
+      taskId: id,
+      projectId: createTaskDto.projectId,
+      title: createTaskDto.title,
+      description: createTaskDto.description,
+      priority: createTaskDto.priority,
+      status: createTaskDto.status,
+      deadline: createTaskDto.deadline,
+      assigneeId: createTaskDto.assigneeId,
+      teamId: createTaskDto.teamId,
+      imageUrl: createTaskDto.imageUrl,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  private async getTaskFromTable(id: string) {
+    const result = await this.dynamo.get({
+      TableName: this.tableName,
+      Key: { taskId: id },
+    });
+
+    return result.Item ?? null;
   }
 }

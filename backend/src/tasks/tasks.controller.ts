@@ -8,7 +8,10 @@ import {
   Post,
   Put,
   Req,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { TasksService } from './tasks.service';
 
@@ -69,6 +72,34 @@ export class TasksController {
       dto,
       req.user,
     );
+  }
+
+  @Post(':id/image')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+    @Req() req: any,
+  ) {
+    return this.tasksService.uploadImage(id, file, req.user);
+  }
+
+  @Put(':id/image')
+  @UseInterceptors(FileInterceptor('file'))
+  replaceImage(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+    @Req() req: any,
+  ) {
+    return this.tasksService.replaceImage(id, file, req.user);
+  }
+
+  @Delete(':id/image')
+  removeImage(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    return this.tasksService.deleteImage(id, req.user);
   }
 
   @Delete(':id')

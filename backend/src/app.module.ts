@@ -4,6 +4,9 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { AwsModule } from './aws/aws.module';
 import { AuthModule } from './auth/auth.module';
+import { TasksModule } from './tasks/tasks.module';
+import { ProjectModule } from './project/project.module';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
   imports: [
@@ -16,6 +19,9 @@ import { AuthModule } from './auth/auth.module';
     }),
     AwsModule,
     AuthModule,
+    TasksModule,
+    ProjectModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
