@@ -1,71 +1,154 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-
 import { v4 as uuid } from 'uuid';
-
+import { DynamoDBService } from '../aws/dynamodb.service';
+import { AuthenticatedUser } from '../auth/auth.types';
+import { UserRole } from '../enums';
 import { CreateProjectDto } from './create-project.dto';
+import { Project } from './project';
 import { UpdateProjectDto } from './update-project.dto';
 
 @Injectable()
 export class ProjectService {
-  private projects: any[] = [];
+  constructor(private readonly dynamoDb: DynamoDBService) {}
 
-  create(createProjectDto: CreateProjectDto) {
-    const project = {
-      id: uuid(),
-      ...createProjectDto,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  async create(createProjectDto: CreateProjectDto, user: AuthenticatedUser) {
+    this.assertManager(user);
+
+    const now = new Date().toISOString();
+    const project: Project = {
+      projectId: uuid(),
+      name: createProjectDto.name,
+      description: createProjectDto.description,
+      teamId: createProjectDto.teamId ?? null,
+      createdBy: user.userId,
+      isActive: true,
+      totalTasks: 0,
+      completedTasks: 0,
+      createdAt: now,
+      updatedAt: now,
     };
 
-    this.projects.push(project);
+    await this.dynamoDb.put({
+      TableName: this.dynamoDb.table('projects'),
+      Item: project,
+    });
 
     return project;
   }
 
-  findAll() {
-    return this.projects;
+  async findAll(user: AuthenticatedUser) {
+    const result = await this.dynamoDb.scan({
+      TableName: this.dynamoDb.table('projects'),
+      FilterExpression: 'attribute_not_exists(isActive) OR isActive = :active',
+      ExpressionAttributeValues: {
+        ':active': true,
+      },
+    });
+
+    const projects = (result.Items ?? []) as Project[];
+    if (this.isManager(user)) {
+      return projects;
+    }
+
+    return projects.filter(
+      (project) => !project.teamId || project.teamId === user.teamId,
+    );
   }
 
-  findOne(id: string) {
-    const project = this.projects.find(
-      (p) => p.id === id,
-    );
+  async findOne(id: string, user: AuthenticatedUser) {
+    const result = await this.dynamoDb.get({
+      TableName: this.dynamoDb.table('projects'),
+      Key: { projectId: id },
+    });
 
-    if (!project) {
-      throw new NotFoundException(
-        'Project not found',
-      );
+    const project = result.Item as Project | undefined;
+    if (!project || project.isActive === false) {
+      throw new NotFoundException('Project not found');
+    }
+
+    if (
+      !this.isManager(user) &&
+      project.teamId &&
+      project.teamId !== user.teamId
+    ) {
+      throw new ForbiddenException('You cannot access this project');
     }
 
     return project;
   }
 
-  update(
+  async update(
     id: string,
     updateProjectDto: UpdateProjectDto,
+    user: AuthenticatedUser,
   ) {
-    const project = this.findOne(id);
+    this.assertManager(user);
+    await this.findOne(id, user);
 
-    Object.assign(project, updateProjectDto);
+    const updates = {
+      ...updateProjectDto,
+      updatedAt: new Date().toISOString(),
+    };
 
-    project.updatedAt = new Date();
+    const result = await this.dynamoDb.update({
+      TableName: this.dynamoDb.table('projects'),
+      Key: { projectId: id },
+      ...this.toUpdateExpression(updates),
+      ReturnValues: 'ALL_NEW',
+    });
 
-    return project;
+    return result.Attributes as Project;
   }
 
-  remove(id: string) {
-    const project = this.findOne(id);
+  async remove(id: string, user: AuthenticatedUser) {
+    this.assertManager(user);
+    await this.findOne(id, user);
 
-    this.projects = this.projects.filter(
-      (p) => p.id !== id,
-    );
+    const result = await this.dynamoDb.update({
+      TableName: this.dynamoDb.table('projects'),
+      Key: { projectId: id },
+      ...this.toUpdateExpression({
+        isActive: false,
+        updatedAt: new Date().toISOString(),
+      }),
+      ReturnValues: 'ALL_NEW',
+    });
 
     return {
       message: 'Project deleted successfully',
-      project,
+      project: result.Attributes as Project,
+    };
+  }
+
+  private assertManager(user: AuthenticatedUser) {
+    if (!this.isManager(user)) {
+      throw new ForbiddenException('Only managers can manage projects');
+    }
+  }
+
+  private isManager(user: AuthenticatedUser) {
+    return String(user.role).toUpperCase() === UserRole.MANAGER;
+  }
+
+  private toUpdateExpression(values: Record<string, unknown>) {
+    const entries = Object.entries(values).filter(
+      ([, value]) => value !== undefined,
+    );
+
+    return {
+      UpdateExpression: `SET ${entries
+        .map(([key]) => `#${key} = :${key}`)
+        .join(', ')}`,
+      ExpressionAttributeNames: Object.fromEntries(
+        entries.map(([key]) => [`#${key}`, key]),
+      ),
+      ExpressionAttributeValues: Object.fromEntries(
+        entries.map(([key, value]) => [`:${key}`, value]),
+      ),
     };
   }
 }

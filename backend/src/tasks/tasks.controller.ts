@@ -7,8 +7,12 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Req,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { TasksService } from './tasks.service';
 
@@ -25,13 +29,17 @@ export class TasksController {
   @Post()
   create(
     @Body() dto: CreateTaskDto,
+    @Req() req: any,
   ) {
-    return this.tasksService.create(dto);
+    return this.tasksService.create(dto, req.user);
   }
 
   @Get()
-  findAll(@Req() req: any) {
-    return this.tasksService.findAll(req.user);
+  findAll(
+    @Req() req: any,
+    @Query('teamId') teamId?: string,
+  ) {
+    return this.tasksService.findAll(req.user, teamId);
   }
 
   @Get(':id')
@@ -80,5 +88,33 @@ export class TasksController {
       id,
       req.user,
     );
+  }
+
+  @Post(':id/image')
+  @UseInterceptors(FileInterceptor('image'))
+  uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    return this.tasksService.uploadImage(id, file, req.user);
+  }
+
+  @Put(':id/image')
+  @UseInterceptors(FileInterceptor('image'))
+  replaceImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    return this.tasksService.replaceImage(id, file, req.user);
+  }
+
+  @Delete(':id/image')
+  deleteImage(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    return this.tasksService.deleteImage(id, req.user);
   }
 }
