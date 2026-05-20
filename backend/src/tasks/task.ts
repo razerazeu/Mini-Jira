@@ -47,6 +47,10 @@ export interface Task {
    * Stores S3 references only, not the image itself.
    */
   image?: TaskImage | null;
+  previousImages?: TaskImage[];
+  imageOriginalKey?: string | null;
+  imageOriginalVersionId?: string | null;
+  imageResizedKey?: string | null;
 
   /**
    * Useful for dashboard and average time-to-close metric.

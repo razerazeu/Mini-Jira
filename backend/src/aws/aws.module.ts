@@ -4,6 +4,7 @@ import { S3Service } from './s3.service';
 import { SNSService } from './sns.service';
 import { SQSService } from './sqs.service';
 import { CloudWatchService } from './cloudwatch.service';
+import { ActivityLogService } from '../activitylog/activitylog.service';
 
 @Module({
   providers: [
@@ -12,6 +13,7 @@ import { CloudWatchService } from './cloudwatch.service';
     SNSService,
     SQSService,
     CloudWatchService,
+    ActivityLogService,
   ],
   exports: [
     DynamoDBService,
@@ -19,6 +21,7 @@ import { CloudWatchService } from './cloudwatch.service';
     SNSService,
     SQSService,
     CloudWatchService,
+    ActivityLogService,
   ],
 })
 export class AwsModule {}

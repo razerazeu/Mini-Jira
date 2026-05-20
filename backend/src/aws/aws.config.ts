@@ -17,9 +17,6 @@ export const dynamoDbTableConfig = {
   activityLog: {
     envKey: 'DYNAMODB_ACTIVITY_LOG_TABLE',
   },
-  auditLog: {
-    envKey: 'DYNAMODB_AUDIT_LOG_TABLE',
-  },
 } as const;
 
 export type DynamoDbTableName = keyof typeof dynamoDbTableConfig;

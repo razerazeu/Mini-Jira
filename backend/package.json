@@ -20,7 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.1045.0",
+    "@aws-sdk/client-cloudwatch": "^3.1050.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.1045.0",
     "@aws-sdk/client-dynamodb": "^3.1045.0",
     "@aws-sdk/client-s3": "^3.1045.0",
@@ -38,7 +38,8 @@
     "multer": "^2.1.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.1",
+    "zip": "^1.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -51,6 +52,7 @@
     "@types/multer": "^2.1.0",
     "@types/node": "^24.0.0",
     "@types/supertest": "^7.0.0",
+    "@types/uuid": "^9.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
@@ -65,18 +67,15 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
-    ,"@types/uuid": "^9.0.0"
   },
   "dependenciesMeta": {
     "uuid": {
       "built": false
     }
   },
-  "optionalDependencies": {},
   "engines": {
     "node": ">=18"
-  }
-,
+  },
   "jest": {
     "moduleFileExtensions": [
       "js",

@@ -29,12 +29,18 @@ export class S3Service {
     return this.client.send(new DeleteObjectCommand(params));
   }
 
-  getPresignedGetUrl(bucket: string, key: string, expiresIn = 3600) {
+  getPresignedGetUrl(
+    bucket: string,
+    key: string,
+    expiresIn = 3600,
+    versionId?: string,
+  ) {
     return getSignedUrl(
       this.client,
       new GetObjectCommand({
         Bucket: bucket,
         Key: key,
+        VersionId: versionId,
       }),
       { expiresIn },
     );

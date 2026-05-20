@@ -1,9 +1,9 @@
-import { ActivityType } from '../enums';
+import { ActivityType, TaskStatus } from '../enums';
 export interface ActivityLog {
   /**
    * DynamoDB PK
    */
-  logId: string;
+  activityId: string;
 
   type: ActivityType;
 
@@ -16,6 +16,10 @@ export interface ActivityLog {
 
   actorId?: string;
   actorName?: string;
+
+  oldStatus?: TaskStatus;
+  newStatus?: TaskStatus;
+  reason?: string;
 
   message: string;
 
