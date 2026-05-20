@@ -28,6 +28,9 @@ export interface User {
    * Optional SNS email subscription tracking.
    */
   snsSubscriptionArn?: string | null;
+  taskAssignmentSubscriptionArn?: string | null;
+  dailyDigestSubscriptionArn?: string | null;
+  alarmSubscriptionArn?: string | null;
   notificationStatus?: NotificationStatus;
 
   isActive: boolean;

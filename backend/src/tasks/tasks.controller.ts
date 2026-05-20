@@ -29,11 +29,13 @@ export class TasksController {
 
   @Post()
   @UseGuards(RoleGuard)
+  @UseInterceptors(FileInterceptor('file'))
   create(
     @Body() dto: CreateTaskDto,
+    @UploadedFile() file: any,
     @Req() req: any,
   ) {
-    return this.tasksService.create(dto, req.user);
+    return this.tasksService.create(dto, req.user, file);
   }
 
   @Get()

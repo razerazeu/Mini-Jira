@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { CreateCommentDto } from './create-comment.dto';
+import { ActivityLogService } from '../activitylog/activitylog.service';
 import { DynamoDBService } from '../aws/dynamodb.service';
 import { TasksService } from '../tasks/tasks.service';
 
@@ -14,6 +15,7 @@ export class CommentService {
 
   constructor(
     private readonly dynamo: DynamoDBService,
+    private readonly activityLog: ActivityLogService,
     private readonly tasksService: TasksService,
   ) {
     this.tableName = this.dynamo.table('comments');
@@ -22,7 +24,7 @@ export class CommentService {
   }
 
   async create(taskId: string, dto: CreateCommentDto, user: any) {
-    await this.tasksService.findOne(taskId, user);
+    const task = await this.tasksService.findOne(taskId, user);
 
     const comment = {
       taskId,
@@ -43,6 +45,23 @@ export class CommentService {
       this.commentsMap[taskId] = this.commentsMap[taskId] || [];
       this.commentsMap[taskId].push(comment);
     }
+
+    const actorLabel = user?.name || user?.email || comment.userId || 'user';
+    const taskLabel = task?.title || task?.taskId || task?.id || 'task';
+    await this.activityLog.write({
+      type: 'COMMENT_ADDED',
+      taskId,
+      projectId: task?.projectId,
+      teamId: task?.teamId,
+      assigneeId: task?.assigneeId,
+      assigneeEmail: task?.assigneeEmail,
+      actorId: comment.userId,
+      actorName: actorLabel,
+      message: `${actorLabel} commented on ${taskLabel}`,
+      metadata: {
+        commentId: comment.commentId,
+      },
+    });
 
     return comment;
   }

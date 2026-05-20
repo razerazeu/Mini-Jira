@@ -3,7 +3,7 @@ export interface ActivityLog {
   /**
    * DynamoDB PK
    */
-  logId: string;
+  activityId: string;
 
   type: ActivityType;
 
