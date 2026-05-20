@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ProjectModule } from './project/project.module';
 import { CommentModule } from './comment/comment.module';
+import { TeamModule } from './team/team.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { CommentModule } from './comment/comment.module';
     }),
     AwsModule,
     AuthModule,
+    TeamModule,
+    UserModule,
     TasksModule,
     ProjectModule,
     CommentModule,

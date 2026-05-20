@@ -3,11 +3,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'crypto';
 
 import { CreateProjectDto } from './create-project.dto';
 import { UpdateProjectDto } from './update-project.dto';
 import { DynamoDBService } from '../aws/dynamodb.service';
+import { TeamService } from '../team/team.service';
 
 @Injectable()
 export class ProjectService {
@@ -15,13 +16,18 @@ export class ProjectService {
   private readonly tableName?: string;
   private readonly useDynamo: boolean;
 
-  constructor(private readonly dynamo: DynamoDBService) {
+  constructor(
+    private readonly dynamo: DynamoDBService,
+    private readonly teamService: TeamService,
+  ) {
     this.tableName = this.dynamo.table('projects');
-    this.useDynamo = process.env.USE_DYNAMODB === 'true' && !!this.tableName;
+    this.useDynamo = process.env.USE_DYNAMODB !== 'false' && !!this.tableName;
   }
 
-  async create(createProjectDto: CreateProjectDto) {
-    const project = this.buildProject(createProjectDto);
+  async create(createProjectDto: CreateProjectDto, user?: any) {
+    await this.assertProjectTeamExists(createProjectDto.teamId);
+
+    const project = this.buildProject(createProjectDto, user);
 
     if (this.useDynamo) {
       await this.dynamo.put({
@@ -63,7 +69,7 @@ export class ProjectService {
   async findOne(id: string) {
     const project = this.useDynamo
       ? await this.getProjectFromTable(id)
-      : this.projects.find((p) => p.id === id);
+      : this.projects.find((p) => p.id === id || p.projectId === id);
 
     if (!project) {
       throw new NotFoundException(
@@ -79,8 +85,11 @@ export class ProjectService {
     updateProjectDto: UpdateProjectDto,
   ) {
     const project = await this.findOne(id);
+    const updates = this.definedOnly(updateProjectDto);
 
-    Object.assign(project, updateProjectDto);
+    await this.assertProjectTeamExists(updates.teamId);
+
+    Object.assign(project, updates);
 
     project.updatedAt = new Date().toISOString();
 
@@ -114,15 +123,16 @@ export class ProjectService {
     };
   }
 
-  private buildProject(createProjectDto: CreateProjectDto) {
+  private buildProject(createProjectDto: CreateProjectDto, user?: any) {
     const now = new Date().toISOString();
-    const id = uuid();
+    const id = randomUUID();
 
     return {
       id,
       projectId: id,
       ...createProjectDto,
-      createdBy: 'system',
+      teamId: createProjectDto.teamId ?? null,
+      createdBy: user?.userId || user?.sub || user?.id || 'system',
       isActive: true,
       totalTasks: 0,
       completedTasks: 0,
@@ -138,5 +148,19 @@ export class ProjectService {
     });
 
     return result.Item ?? null;
+  }
+
+  private async assertProjectTeamExists(teamId?: string | null) {
+    if (!teamId) {
+      return;
+    }
+
+    await this.teamService.findOne(teamId);
+  }
+
+  private definedOnly<T extends Record<string, any>>(value: T): Partial<T> {
+    return Object.fromEntries(
+      Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined),
+    ) as Partial<T>;
   }
 }

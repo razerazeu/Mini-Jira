@@ -23,7 +23,10 @@ export class CommentController {
   }
 
   @Get()
-  findByTask(@Param('taskId') taskId: string) {
-    return this.commentService.findByTask(taskId);
+  findByTask(
+    @Param('taskId') taskId: string,
+    @Req() req: any,
+  ) {
+    return this.commentService.findByTaskForUser(taskId, req.user);
   }
 }

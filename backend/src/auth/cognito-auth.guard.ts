@@ -11,6 +11,8 @@ import jwt, { JwtHeader, SigningKeyCallback } from 'jsonwebtoken';
 import { createPublicKey, JsonWebKey } from 'crypto';
 import { AuthenticatedUser, CognitoTokenPayload } from './auth.types';
 import { IS_PUBLIC_KEY } from './public.decorator';
+import { DynamoDBService } from '../aws/dynamodb.service';
+import { UserRole } from '../enums';
 
 interface JwksResponse {
   keys: Array<JsonWebKey & { kid?: string }>;
@@ -26,6 +28,7 @@ export class CognitoAuthGuard implements CanActivate {
   constructor(
     private readonly configService: ConfigService,
     private readonly reflector: Reflector,
+    private readonly dynamoDBService: DynamoDBService,
   ) {
     const region = this.configService.getOrThrow<string>('AWS_REGION');
     const userPoolId =
@@ -59,7 +62,7 @@ export class CognitoAuthGuard implements CanActivate {
 
     const payload = await this.verifyToken(token);
     this.assertExpectedClient(payload);
-    request.user = this.toAuthenticatedUser(payload);
+    request.user = await this.toAuthenticatedUser(payload);
 
     return true;
   }
@@ -76,7 +79,7 @@ export class CognitoAuthGuard implements CanActivate {
       return null;
     }
 
-    return token;
+    return this.normalizeBearerToken(token);
   }
 
   private verifyToken(token: string): Promise<CognitoTokenPayload> {
@@ -90,7 +93,8 @@ export class CognitoAuthGuard implements CanActivate {
         },
         (error, decoded) => {
           if (error || !decoded || typeof decoded === 'string') {
-            reject(new UnauthorizedException('Invalid Cognito token'));
+            const reason = error?.message ? `: ${error.message}` : '';
+            reject(new UnauthorizedException(`Invalid Cognito token${reason}`));
             return;
           }
 
@@ -98,6 +102,19 @@ export class CognitoAuthGuard implements CanActivate {
         },
       );
     });
+  }
+
+  private normalizeBearerToken(token: string) {
+    const trimmed = token.trim();
+
+    if (
+      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'"))
+    ) {
+      return trimmed.slice(1, -1);
+    }
+
+    return trimmed;
   }
 
   private readonly getSigningKey = (
@@ -158,17 +175,61 @@ export class CognitoAuthGuard implements CanActivate {
     }
   }
 
-  private toAuthenticatedUser(
+  private async toAuthenticatedUser(
     payload: CognitoTokenPayload,
-  ): AuthenticatedUser {
+  ): Promise<AuthenticatedUser> {
+    const groups = payload['cognito:groups'] || [];
+    const userRecord = this.needsUserRecord(payload)
+      ? await this.getUserRecord(payload.sub)
+      : null;
+
     return {
       userId: payload.sub,
-      email: payload.email,
-      name: payload.name,
-      role: payload['custom:role'],
-      teamId: payload['custom:teamId'],
-      groups: payload['cognito:groups'] || [],
+      email: payload.email || userRecord?.email,
+      name: payload.name || userRecord?.name,
+      role:
+        payload['custom:role'] ||
+        userRecord?.role ||
+        this.roleFromGroups(groups),
+      teamId: payload['custom:teamId'] || userRecord?.teamId,
+      groups,
       tokenUse: payload.token_use,
     };
+  }
+
+  private needsUserRecord(payload: CognitoTokenPayload) {
+    return (
+      !payload.email ||
+      !payload.name ||
+      !payload['custom:role'] ||
+      !payload['custom:teamId']
+    );
+  }
+
+  private async getUserRecord(userId: string) {
+    const tableName = this.dynamoDBService.table('users');
+
+    if (!tableName) {
+      return null;
+    }
+
+    const result = await this.dynamoDBService.get({
+      TableName: tableName,
+      Key: { userId },
+    });
+
+    return result.Item ?? null;
+  }
+
+  private roleFromGroups(groups: string[]): UserRole | undefined {
+    if (groups.some((group) => group.toUpperCase() === UserRole.MANAGER)) {
+      return UserRole.MANAGER;
+    }
+
+    if (groups.some((group) => group.toUpperCase() === UserRole.EMPLOYEE)) {
+      return UserRole.EMPLOYEE;
+    }
+
+    return undefined;
   }
 }

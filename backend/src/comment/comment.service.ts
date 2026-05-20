@@ -1,24 +1,32 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'crypto';
 import { CreateCommentDto } from './create-comment.dto';
 import { DynamoDBService } from '../aws/dynamodb.service';
+import { TasksService } from '../tasks/tasks.service';
 
 @Injectable()
 export class CommentService {
   // store comments in memory as { taskId -> comments[] }
   private commentsMap: Record<string, any[]> = {};
   private readonly tableName?: string;
+  private readonly taskIdIndexName?: string;
   private readonly useDynamo: boolean;
 
-  constructor(private readonly dynamo: DynamoDBService) {
+  constructor(
+    private readonly dynamo: DynamoDBService,
+    private readonly tasksService: TasksService,
+  ) {
     this.tableName = this.dynamo.table('comments');
-    this.useDynamo = process.env.USE_DYNAMODB === 'true' && !!this.tableName;
+    this.taskIdIndexName = process.env.COMMENTS_TASK_INDEX;
+    this.useDynamo = process.env.USE_DYNAMODB !== 'false' && !!this.tableName;
   }
 
   async create(taskId: string, dto: CreateCommentDto, user: any) {
+    await this.tasksService.findOne(taskId, user);
+
     const comment = {
       taskId,
-      commentId: uuid(),
+      commentId: randomUUID(),
       userId: user?.sub || user?.userId || user?.id || 'unknown',
       userName: user?.name || user?.username || 'anonymous',
       userRole: user?.role || 'user',
@@ -43,6 +51,9 @@ export class CommentService {
     if (this.useDynamo) {
       const result = await this.dynamo.query({
         TableName: this.tableName,
+        ...(this.taskIdIndexName
+          ? { IndexName: this.taskIdIndexName }
+          : {}),
         KeyConditionExpression: 'taskId = :taskId',
         ExpressionAttributeValues: {
           ':taskId': taskId,
@@ -53,6 +64,11 @@ export class CommentService {
     }
 
     return this.commentsMap[taskId] || [];
+  }
+
+  async findByTaskForUser(taskId: string, user: any) {
+    await this.tasksService.findOne(taskId, user);
+    return this.findByTask(taskId);
   }
 
   async findOne(taskId: string, commentId: string) {

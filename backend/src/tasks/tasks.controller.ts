@@ -9,6 +9,7 @@ import {
   Put,
   Req,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -18,6 +19,7 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './create-task.dto';
 import { UpdateTaskDto } from './update-task.dto';
 import { UpdateTaskStatusDto } from './update-task-status.dto';
+import { RoleGuard } from '../auth/role.guard';
 
 @Controller('tasks')
 export class TasksController {
@@ -26,10 +28,12 @@ export class TasksController {
   ) {}
 
   @Post()
+  @UseGuards(RoleGuard)
   create(
     @Body() dto: CreateTaskDto,
+    @Req() req: any,
   ) {
-    return this.tasksService.create(dto);
+    return this.tasksService.create(dto, req.user);
   }
 
   @Get()
@@ -49,6 +53,7 @@ export class TasksController {
   }
 
   @Put(':id')
+  @UseGuards(RoleGuard)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateTaskDto,
@@ -103,6 +108,7 @@ export class TasksController {
   }
 
   @Delete(':id')
+  @UseGuards(RoleGuard)
   remove(
     @Param('id') id: string,
     @Req() req: any,

@@ -4,9 +4,11 @@ import { AwsModule } from '../aws/aws.module';
 import { AuthController } from './auth.controller';
 import { CognitoAuthGuard } from './cognito-auth.guard';
 import { CognitoService } from './cognito.service';
+import { RoleGuard } from './role.guard';
 
 const providers: any[] = [
   CognitoService,
+  RoleGuard,
   {
     provide: APP_GUARD,
     useClass: CognitoAuthGuard,
@@ -17,6 +19,6 @@ const providers: any[] = [
   imports: [AwsModule],
   controllers: [AuthController],
   providers,
-  exports: [CognitoService],
+  exports: [CognitoService, RoleGuard],
 })
 export class AuthModule {}

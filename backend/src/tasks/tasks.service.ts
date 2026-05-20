@@ -1,10 +1,11 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
 
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'crypto';
 
 import { CreateTaskDto } from './create-task.dto';
 import { UpdateTaskDto } from './update-task.dto';
@@ -14,24 +15,42 @@ import { Task } from './task';
 import { S3Service } from '../aws/s3.service';
 import { DynamoDBService } from '../aws/dynamodb.service';
 import { ProjectService } from '../project/project.service';
+import { TeamService } from '../team/team.service';
+import { UserRole } from '../enums';
+import { isManager, normalizeRole } from '../auth/role.utils';
 
 @Injectable()
 export class TasksService {
   private tasks: any[] = [];
   private readonly tableName?: string;
+  private readonly usersTableName?: string;
+  private readonly teamIndexName?: string;
   private readonly useDynamo: boolean;
 
   constructor(
     private readonly s3: S3Service,
     private readonly dynamo: DynamoDBService,
     private readonly projectService: ProjectService,
+    private readonly teamService: TeamService,
   ) {
     this.tableName = this.dynamo.table('tasks');
-    this.useDynamo = process.env.USE_DYNAMODB === 'true' && !!this.tableName;
+    this.usersTableName = this.dynamo.table('users');
+    this.teamIndexName = process.env.TASKS_TEAM_INDEX;
+    this.useDynamo = process.env.USE_DYNAMODB !== 'false' && !!this.tableName;
   }
 
-  async create(createTaskDto: CreateTaskDto) {
-    const task = this.buildTask(createTaskDto);
+  async create(createTaskDto: CreateTaskDto, user: any) {
+    this.assertManager(user);
+
+    const resolvedTeamId = await this.validateTaskRelationships(createTaskDto);
+
+    const task = this.buildTask(
+      {
+        ...createTaskDto,
+        teamId: resolvedTeamId,
+      },
+      user,
+    );
 
     if (this.useDynamo) {
       await this.dynamo.put({
@@ -51,13 +70,20 @@ export class TasksService {
   }
 
   async findAll(user: any) {
-    const items = this.useDynamo
-      ? ((await this.dynamo.scan({ TableName: this.tableName })).Items || [])
-      : this.tasks;
-
-    if (user.role === 'manager') {
+    if (isManager(user)) {
+      const items = this.useDynamo
+        ? ((await this.dynamo.scan({ TableName: this.tableName })).Items || [])
+        : this.tasks;
       return items;
     }
+
+    if (!user?.teamId) {
+      throw new ForbiddenException('User does not belong to a team');
+    }
+
+    const items = this.useDynamo
+      ? await this.findTasksByTeam(user.teamId)
+      : this.tasks;
 
     return items.filter(
       (task) => task.teamId === user.teamId,
@@ -74,7 +100,7 @@ export class TasksService {
     }
 
     if (
-      user.role !== 'manager' &&
+      !isManager(user) &&
       task.teamId !== user.teamId
     ) {
       throw new ForbiddenException(
@@ -90,11 +116,20 @@ export class TasksService {
     updateTaskDto: UpdateTaskDto,
     user: any,
   ) {
-    const task = this.findOne(id, user);
+    this.assertManager(user);
 
-    const resolvedTask = await task;
+    const resolvedTask = await this.findOne(id, user);
+    const previousProjectId = resolvedTask.projectId;
+    const updates = this.definedOnly(updateTaskDto);
+    const mergedTask = {
+      ...resolvedTask,
+      ...updates,
+    };
 
-    Object.assign(resolvedTask, updateTaskDto);
+    const resolvedTeamId = await this.validateTaskRelationships(mergedTask);
+
+    Object.assign(resolvedTask, updates);
+    resolvedTask.teamId = resolvedTeamId;
 
     resolvedTask.updatedAt = new Date().toISOString();
 
@@ -103,6 +138,11 @@ export class TasksService {
         TableName: this.tableName,
         Item: resolvedTask,
       });
+    }
+
+    if (previousProjectId !== resolvedTask.projectId) {
+      await this.projectService.adjustTaskCount(previousProjectId, -1);
+      await this.projectService.adjustTaskCount(resolvedTask.projectId, 1);
     }
 
     return resolvedTask;
@@ -114,6 +154,12 @@ export class TasksService {
     user: any,
   ) {
     const task = await this.findOne(id, user);
+
+    if (!isManager(user) && task.assigneeId !== this.getUserId(user)) {
+      throw new ForbiddenException(
+        'Only the task assignee can update task status',
+      );
+    }
 
     task.status = dto.status;
 
@@ -145,7 +191,7 @@ export class TasksService {
       throw new Error('S3 bucket not configured (S3_ORIGINALS_BUCKET)');
     }
 
-    const key = `tasks/${task.id}/${uuid()}_${file.originalname}`;
+    const key = `tasks/${task.id}/${randomUUID()}_${file.originalname}`;
 
     const res: any = await this.s3.uploadObject({
       Bucket: bucket,
@@ -219,6 +265,8 @@ export class TasksService {
   }
 
   async remove(id: string, user: any) {
+    this.assertManager(user);
+
     const task = await this.findOne(id, user);
 
     if (this.useDynamo) {
@@ -243,9 +291,9 @@ export class TasksService {
     };
   }
 
-  private buildTask(createTaskDto: CreateTaskDto) {
+  private buildTask(createTaskDto: CreateTaskDto, user: any) {
     const now = new Date().toISOString();
-    const id = uuid();
+    const id = randomUUID();
 
     return {
       id,
@@ -259,6 +307,8 @@ export class TasksService {
       assigneeId: createTaskDto.assigneeId,
       teamId: createTaskDto.teamId,
       imageUrl: createTaskDto.imageUrl,
+      createdBy: this.getUserId(user) || 'system',
+      createdByName: user?.name,
       createdAt: now,
       updatedAt: now,
     };
@@ -271,5 +321,96 @@ export class TasksService {
     });
 
     return result.Item ?? null;
+  }
+
+  private async findTasksByTeam(teamId: string) {
+    if (this.teamIndexName) {
+      const result = await this.dynamo.query({
+        TableName: this.tableName,
+        IndexName: this.teamIndexName,
+        KeyConditionExpression: 'teamId = :teamId',
+        ExpressionAttributeValues: {
+          ':teamId': teamId,
+        },
+      });
+
+      return result.Items || [];
+    }
+
+    const result = await this.dynamo.scan({ TableName: this.tableName });
+    return result.Items || [];
+  }
+
+  private async validateTaskRelationships(task: {
+    projectId: string;
+    teamId?: string | null;
+    assigneeId: string;
+  }) {
+    const project = await this.projectService.findOne(task.projectId);
+    const projectTeamId = project.teamId ?? null;
+
+    if (projectTeamId && task.teamId && projectTeamId !== task.teamId) {
+      throw new BadRequestException(
+        'Task team must match the project team',
+      );
+    }
+
+    const resolvedTeamId = projectTeamId ?? task.teamId;
+    if (!resolvedTeamId) {
+      throw new BadRequestException('Task team is required');
+    }
+
+    await this.teamService.findOne(resolvedTeamId);
+
+    const assignee = await this.findUser(task.assigneeId);
+
+    if (!assignee) {
+      throw new BadRequestException('Assignee not found');
+    }
+
+    if (assignee.isActive === false) {
+      throw new BadRequestException('Assignee is inactive');
+    }
+
+    if (normalizeRole(assignee.role) !== UserRole.EMPLOYEE) {
+      throw new BadRequestException('Assignee must be an employee');
+    }
+
+    if (assignee.teamId !== resolvedTeamId) {
+      throw new BadRequestException(
+        'Assignee must belong to the selected team',
+      );
+    }
+
+    return resolvedTeamId;
+  }
+
+  private async findUser(userId: string) {
+    if (!this.usersTableName) {
+      return null;
+    }
+
+    const result = await this.dynamo.get({
+      TableName: this.usersTableName,
+      Key: { userId },
+    });
+
+    return result.Item ?? null;
+  }
+
+  private assertManager(user: any) {
+    if (!isManager(user)) {
+      throw new ForbiddenException('Manager access required');
+    }
+  }
+
+  private getUserId(user: any) {
+    return user?.userId || user?.sub || user?.id;
+  }
+
+  private definedOnly<T extends Record<string, any>>(value: T): Partial<T> {
+    return Object.fromEntries(
+      Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined),
+    ) as Partial<T>;
   }
 }

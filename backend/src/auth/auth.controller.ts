@@ -71,10 +71,17 @@ export class AuthController {
         body.password,
       );
 
+      const tokens = result.AuthenticationResult;
+
       return {
         challengeName: result.ChallengeName,
         session: result.Session,
-        tokens: result.AuthenticationResult,
+        accessToken: tokens?.AccessToken,
+        idToken: tokens?.IdToken,
+        refreshToken: tokens?.RefreshToken,
+        tokenType: tokens?.TokenType,
+        expiresIn: tokens?.ExpiresIn,
+        tokens,
       };
     } catch (error) {
       this.handleCognitoError(error);
@@ -125,6 +132,6 @@ export class AuthController {
       throw new UnauthorizedException('Missing bearer token');
     }
 
-    return token;
+    return token.trim();
   }
 }

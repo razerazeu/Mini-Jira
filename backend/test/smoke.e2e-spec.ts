@@ -3,12 +3,14 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { S3Service } from '../src/aws/s3.service';
+import { DynamoDBService } from '../src/aws/dynamodb.service';
 import jwt from 'jsonwebtoken';
 
 const authHeader = { Authorization: 'Bearer test-token' };
 
 describe('API smoke tests', () => {
   let app: INestApplication;
+  let createdTeamId = 'team-1';
 
   beforeAll(async () => {
     process.env.USE_DYNAMODB = 'false';
@@ -29,12 +31,31 @@ describe('API smoke tests', () => {
       uploadObject: async () => ({ VersionId: 'v1' }),
       getPresignedGetUrl: () => 'https://example.com/object',
     };
+    const mockDynamo = {
+      table: (name: string) => name,
+      get: async ({ Key }) => ({
+        Item: Key.userId === 'test-user'
+          ? {
+              userId: 'test-user',
+              role: 'EMPLOYEE',
+              teamId: createdTeamId,
+              isActive: true,
+            }
+          : null,
+      }),
+      scan: async () => ({ Items: [] }),
+      put: async () => ({}),
+      delete: async () => ({}),
+      query: async () => ({ Items: [] }),
+    };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(S3Service)
       .useValue(mockS3)
+      .overrideProvider(DynamoDBService)
+      .useValue(mockDynamo)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -46,6 +67,14 @@ describe('API smoke tests', () => {
   });
 
   it('creates project -> creates task -> comments -> image lifecycle', async () => {
+    const teamRes = await request(app.getHttpServer())
+      .post('/teams')
+      .set(authHeader)
+      .send({ name: 'Team 1' })
+      .expect(201);
+    const teamId = teamRes.body.teamId;
+    createdTeamId = teamId;
+
     // create project
     const projectRes = await request(app.getHttpServer())
       .post('/projects')
@@ -66,7 +95,7 @@ describe('API smoke tests', () => {
         priority: 'MEDIUM',
         deadline: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
         assigneeId: 'test-user',
-        teamId: 'team-1',
+        teamId,
       })
       .expect(201);
 

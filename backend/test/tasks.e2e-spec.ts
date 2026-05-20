@@ -3,6 +3,8 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { S3Service } from '../src/aws/s3.service';
+import { DynamoDBService } from '../src/aws/dynamodb.service';
+import { CognitoService } from '../src/auth/cognito.service';
 import jwt from 'jsonwebtoken';
 
 const managerAuth = { Authorization: 'Bearer manager-1' };
@@ -10,6 +12,16 @@ const otherAuth = { Authorization: 'Bearer user-2' };
 
 describe('Tasks API behaviors', () => {
   let app: INestApplication;
+  let createdTeamId = 'team-A';
+  const users: Record<string, any> = {
+    u1: {
+      userId: 'u1',
+      email: 'u1@example.com',
+      role: 'EMPLOYEE',
+      teamId: createdTeamId,
+      isActive: true,
+    },
+  };
 
   beforeAll(async () => {
     process.env.USE_DYNAMODB = 'false';
@@ -44,12 +56,32 @@ describe('Tasks API behaviors', () => {
       uploadObject: async () => ({ VersionId: 'v1' }),
       getPresignedGetUrl: () => 'https://example.com/object',
     };
+    const mockDynamo = {
+      table: (name: string) => name,
+      get: async ({ Key }) => ({
+        Item: Key.userId ? users[Key.userId] : null,
+      }),
+      scan: async () => ({ Items: [] }),
+      put: async ({ Item }) => {
+        if (Item.userId) users[Item.userId] = Item;
+        return {};
+      },
+      delete: async () => ({}),
+      query: async () => ({ Items: [] }),
+    };
+    const mockCognito = {
+      updateMembership: async () => ({}),
+    };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(S3Service)
       .useValue(mockS3)
+      .overrideProvider(DynamoDBService)
+      .useValue(mockDynamo)
+      .overrideProvider(CognitoService)
+      .useValue(mockCognito)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -72,6 +104,30 @@ describe('Tasks API behaviors', () => {
   });
 
   it('create, update, status, delete, and forbidden team access', async () => {
+    const teamRes = await request(app.getHttpServer())
+      .post('/teams')
+      .set(managerAuth)
+      .send({ name: 'Team A' })
+      .expect(201);
+    const teamId = teamRes.body.teamId;
+    createdTeamId = teamId;
+    users.u1.teamId = teamId;
+
+    await request(app.getHttpServer())
+      .post('/teams')
+      .set(managerAuth)
+      .send({ name: 'team a' })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .patch('/users/u1/team')
+      .set(managerAuth)
+      .send({ teamId })
+      .expect(200)
+      .expect((res) => {
+        if (res.body.teamId !== teamId) throw new Error('teamId not assigned');
+      });
+
     // create project
     const p = await request(app.getHttpServer())
       .post('/projects')
@@ -92,7 +148,7 @@ describe('Tasks API behaviors', () => {
         priority: 'HIGH',
         deadline: new Date(Date.now() + 3600 * 1000).toISOString(),
         assigneeId: 'u1',
-        teamId: 'team-A',
+        teamId,
       })
       .expect(201);
 
