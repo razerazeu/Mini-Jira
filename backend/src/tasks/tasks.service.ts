@@ -69,10 +69,7 @@ export class TasksService {
       this.tasks.push(task);
     }
 
-    await this.projectService.adjustTaskCount(
-      createTaskDto.projectId,
-      1,
-    );
+    await this.projectService.adjustTaskCount(createTaskDto.projectId, 1);
 
     await this.activityLog.write({
       type: 'TASK_CREATED',
@@ -116,7 +113,7 @@ export class TasksService {
       }
 
       const items = this.useDynamo
-        ? ((await this.dynamo.scan({ TableName: this.tableName })).Items || [])
+        ? (await this.dynamo.scan({ TableName: this.tableName })).Items || []
         : this.tasks;
       return Promise.all(items.map((task) => this.withImageUrls(task)));
     }
@@ -206,18 +203,12 @@ export class TasksService {
     return this.withImageUrls(resolvedTask);
   }
 
-  async updateStatus(
-    id: string,
-    dto: UpdateTaskStatusDto,
-    user: any,
-  ) {
+  async updateStatus(id: string, dto: UpdateTaskStatusDto, user: any) {
     const task = await this.findOneRaw(id, user);
     const previousStatus = task.status;
 
     if (!isManager(user) && dto.status === TaskStatus.DONE) {
-      throw new ForbiddenException(
-        'Only a manager can mark a task as done',
-      );
+      throw new ForbiddenException('Only a manager can mark a task as done');
     }
 
     const now = new Date().toISOString();
@@ -270,19 +261,11 @@ export class TasksService {
     return this.withImageUrls(task);
   }
 
-  async uploadImage(
-    id: string,
-    file: any,
-    user: any,
-  ) {
+  async uploadImage(id: string, file: any, user: any) {
     return this.handleImageUpload(id, file, user, 'IMAGE_UPLOADED');
   }
 
-  async replaceImage(
-    id: string,
-    file: any,
-    user: any,
-  ) {
+  async replaceImage(id: string, file: any, user: any) {
     return this.handleImageUpload(id, file, user, 'IMAGE_REPLACED');
   }
 
@@ -340,15 +323,10 @@ export class TasksService {
         Key: { taskId: id },
       });
     } else {
-      this.tasks = this.tasks.filter(
-        (t) => t.id !== id,
-      );
+      this.tasks = this.tasks.filter((t) => t.id !== id);
     }
 
-    await this.projectService.adjustTaskCount(
-      task.projectId,
-      -1,
-    );
+    await this.projectService.adjustTaskCount(task.projectId, -1);
 
     await this.activityLog.write({
       type: 'TASK_DELETED',
@@ -385,7 +363,9 @@ export class TasksService {
       throw new Error('S3 bucket not configured (S3_ORIGINALS_BUCKET)');
     }
 
-    const key = task.image?.originalKey ?? `tasks/${task.taskId || task.id}/image/original`;
+    const key =
+      task.image?.originalKey ??
+      `tasks/${task.taskId || task.id}/image/original`;
 
     const res: any = await this.s3.uploadObject({
       Bucket: bucket,
@@ -452,9 +432,7 @@ export class TasksService {
     }
 
     if (!this.canAccessTask(task, user)) {
-      throw new ForbiddenException(
-        'You cannot access this task',
-      );
+      throw new ForbiddenException('You cannot access this task');
     }
 
     return task;
@@ -526,9 +504,7 @@ export class TasksService {
     const projectTeamId = project.teamId ?? null;
 
     if (projectTeamId && task.teamId && projectTeamId !== task.teamId) {
-      throw new BadRequestException(
-        'Task team must match the project team',
-      );
+      throw new BadRequestException('Task team must match the project team');
     }
 
     const resolvedTeamId = projectTeamId ?? task.teamId;
@@ -565,6 +541,10 @@ export class TasksService {
     const topicArn = process.env.SNS_TASK_ASSIGNMENT_TOPIC_ARN;
 
     if (!topicArn) {
+      return;
+    }
+
+    if (!(await this.ensureTaskAssignmentFilters(topicArn))) {
       return;
     }
 
@@ -653,6 +633,19 @@ export class TasksService {
     ]
       .filter((line) => line !== null)
       .join('\n');
+  }
+
+  private async ensureTaskAssignmentFilters(topicArn: string) {
+    try {
+      await this.sns.setEmailEndpointFilterPolicies(topicArn);
+      return true;
+    } catch (error) {
+      console.error('Failed to ensure SNS task assignment filter policies', {
+        topicArn,
+        error,
+      });
+      return false;
+    }
   }
 
   private async findUser(userId: string) {
@@ -768,7 +761,10 @@ export class TasksService {
     };
   }
 
-  private toPreviousImage(image: any, timestampField: 'replacedAt' | 'deletedAt') {
+  private toPreviousImage(
+    image: any,
+    timestampField: 'replacedAt' | 'deletedAt',
+  ) {
     return {
       ...image,
       isActive: false,
@@ -797,10 +793,7 @@ export class TasksService {
   }
 
   private async deleteTaskImagesFromS3(task: any) {
-    const images = [
-      task.image,
-      ...(task.previousImages || []),
-    ].filter(Boolean);
+    const images = [task.image, ...(task.previousImages || [])].filter(Boolean);
     const uniqueKeys = new Set<string>();
 
     for (const image of images) {
@@ -823,7 +816,9 @@ export class TasksService {
 
   private definedOnly<T extends Record<string, any>>(value: T): Partial<T> {
     return Object.fromEntries(
-      Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined),
+      Object.entries(value).filter(
+        ([, fieldValue]) => fieldValue !== undefined,
+      ),
     ) as Partial<T>;
   }
 }
