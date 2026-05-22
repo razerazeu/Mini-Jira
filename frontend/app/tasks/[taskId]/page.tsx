@@ -1,6 +1,9 @@
+'use client';
+
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/app/hooks/use-toast';
+import { apiClient } from '@/lib/apiClient';
 
 import type { Task, Comment, Attachment, AuditLog, TaskStatus, TaskPriority } from '../../types/task';
 
@@ -50,9 +53,8 @@ export default function TaskDetailPage() {
         setError(null);
 
         // Fetch task
-        const taskRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}`);
-        if (!taskRes.ok) throw new Error('Failed to fetch task');
-        const taskJson = await taskRes.json();
+        const taskRes = await apiClient.get(`/tasks/${taskId}`);
+        const taskJson = taskRes.data;
         const taskData: Task = {
           ...taskJson,
           status: toFrontendStatus(taskJson.status),
@@ -60,15 +62,13 @@ export default function TaskDetailPage() {
         setTask(taskData);
 
         // Fetch comments
-        const commentsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/comments`);
-        if (!commentsRes.ok) throw new Error('Failed to fetch comments');
-        const commentsData: Comment[] = await commentsRes.json();
+        const commentsRes = await apiClient.get(`/tasks/${taskId}/comments`);
+        const commentsData: Comment[] = commentsRes.data;
         setComments(commentsData);
 
         // Fetch attachments
-        const attachmentsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/attachments`);
-        if (!attachmentsRes.ok) throw new Error('Failed to fetch attachments');
-        const attachmentsData: Attachment[] = await attachmentsRes.json();
+        const attachmentsRes = await apiClient.get(`/tasks/${taskId}/attachments`);
+        const attachmentsData: Attachment[] = attachmentsRes.data;
         setAttachments(attachmentsData);
       } catch (err: any) {
         setError(err.message);
@@ -101,15 +101,12 @@ export default function TaskDetailPage() {
   const handleStatusUpdate = async () => {
     if (!nextStatus) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: toBackendStatus(nextStatus) }),
+      await apiClient.patch(`/tasks/${taskId}/status`, {
+        status: toBackendStatus(nextStatus),
       });
-      if (!res.ok) throw new Error('Failed to update status');
       // Refetch task to get updated status
-      const updatedTaskRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}`);
-      const updatedTaskJson = await updatedTaskRes.json();
+      const updatedTaskRes = await apiClient.get(`/tasks/${taskId}`);
+      const updatedTaskJson = updatedTaskRes.data;
       const updatedTask: Task = {
         ...updatedTaskJson,
         status: toFrontendStatus(updatedTaskJson.status),
@@ -131,13 +128,8 @@ export default function TaskDetailPage() {
   // Handle comment submission
   const handleCommentSubmit = async (content: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-      });
-      if (!res.ok) throw new Error('Failed to add comment');
-      const newComment = await res.json();
+      const res = await apiClient.post(`/tasks/${taskId}/comments`, { content });
+      const newComment = res.data;
       setComments([...comments, newComment]);
     } catch (err: any) {
       toast({
@@ -160,8 +152,8 @@ export default function TaskDetailPage() {
       // Simulate upload delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       // Refetch attachments
-      const attachmentsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/attachments`);
-      const attachmentsData: Attachment[] = await attachmentsRes.json();
+      const attachmentsRes = await apiClient.get(`/tasks/${taskId}/attachments`);
+      const attachmentsData: Attachment[] = attachmentsRes.data;
       setAttachments(attachmentsData);
       toast({
         title: 'Success',
@@ -179,13 +171,10 @@ export default function TaskDetailPage() {
   // Handle attachment deletion
   const handleDeleteAttachment = async (attachmentId: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/attachments/${attachmentId}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete attachment');
+      await apiClient.delete(`/tasks/${taskId}/attachments/${attachmentId}`);
       // Refetch attachments
-      const attachmentsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/attachments`);
-      const attachmentsData: Attachment[] = await attachmentsRes.json();
+      const attachmentsRes = await apiClient.get(`/tasks/${taskId}/attachments`);
+      const attachmentsData: Attachment[] = attachmentsRes.data;
       setAttachments(attachmentsData);
       toast({
         title: 'Success',

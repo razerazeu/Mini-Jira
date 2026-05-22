@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../AuthContext';
-import Sidebar from '../../components/sidebar';
 
 interface Task {
   id: string;
@@ -74,7 +73,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
   const [filterPriority, setFilterPriority] = useState<string>('all');
 
   useEffect(() => {
@@ -84,9 +83,11 @@ export default function DashboardPage() {
     }
     if (token) {
       fetchTasks();
-      fetchTeams();
+      if (isManager) {
+        fetchTeams();
+      }
     }
-  }, [token, authLoading, router, selectedTeam]);
+  }, [token, authLoading, router, selectedTeam, isManager]);
 
   const fetchTasks = async () => {
     try {
@@ -102,9 +103,11 @@ export default function DashboardPage() {
       if (response.ok) {
         const data = await response.json();
         setTasks(data);
+      } else if (response.status === 403) {
+        setTasks([]);
       }
     } catch (error) {
-      console.error('Error fetching tasks:', error);
+      // ignore network/unexpected errors here; UI shows empty state
     } finally {
       setLoading(false);
     }
@@ -119,9 +122,11 @@ export default function DashboardPage() {
       if (response.ok) {
         const data = await response.json();
         setTeams(data);
+      } else if (response.status === 403) {
+        setTeams([]);
       }
     } catch (error) {
-      console.error('Error fetching teams:', error);
+      // teams are optional for non-managers; ignore errors
     }
   };
 
@@ -140,12 +145,11 @@ export default function DashboardPage() {
         setTasks(tasks.map(task => 
           task.id === taskId ? { ...task, status: newStatus } : task
         ));
-        console.log('Task updated successfully');
-      } else {
-        console.error('Failed to update task:', await response.text());
+      } else if (response.status === 403) {
+        // forbidden — user isn't allowed to change this task; ignore and leave UI state unchanged
       }
     } catch (error) {
-      console.error('Error updating task:', error);
+      // ignore network/unexpected errors here
     }
   };
 
@@ -183,37 +187,34 @@ export default function DashboardPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-black">
+      <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-sm text-gray-600">Loading...</p>
+          <p className="mt-4 text-sm text-neutral-300">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-black">
-      <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+    <>
+      {/* Header */}
+      <header className="h-14 bg-[#0d0d0d] border-b border-gray-800 flex items-center justify-between px-6">
+        <h1 className="text-white font-medium">Task Board</h1>
+        <div className="flex items-center gap-4">
+          {isManager && (
+            <button
+              onClick={() => router.push('/tasks/create')}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1.5 rounded-md transition flex items-center gap-2"
+            >
+              <span>+</span>
+              New Task
+            </button>
+          )}
+        </div>
+      </header>
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="h-14 bg-[#0d0d0d] border-b border-gray-800 flex items-center justify-between px-6">
-          <h1 className="text-white font-medium">Task Board</h1>
-          <div className="flex items-center gap-4">
-            {isManager && (
-              <button
-                onClick={() => router.push('/tasks/create')}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1.5 rounded-md transition flex items-center gap-2"
-              >
-                <span>+</span>
-                New Task
-              </button>
-            )}
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-6">
           <div className="mb-6 flex flex-wrap items-center gap-4">
             {/* Team Filter - Only for Managers */}
             {isManager && teams.length > 0 && (
@@ -378,7 +379,6 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </>
   );
 }

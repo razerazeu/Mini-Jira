@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/app/AuthContext';
+import { LayoutDashboard, FolderOpen, Users, Settings, LogOut, Shield, Plus } from 'lucide-react';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -11,21 +12,13 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isManager } = useAuth();
+  const { user, isManager, logout } = useAuth();
 
-  const managerMenuItems = [
-    { icon: '✐ᝰ', label: 'Dashboard', path: '/dashboard' },
-    { icon: '₊ ⊹', label: 'New Task', path: '/tasks/create' },
-    { icon: '𐦂𖨆𐀪', label: 'Teams', path: '/teams' },
-    { icon: '𐀪', label: 'Users', path: '/admin/users' },
+  const baseItems = [
+    { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', path: '/dashboard' },
+    { icon: <FolderOpen className="w-5 h-5" />, label: 'Projects', path: '/projects' },
+    { icon: <Users className="w-5 h-5" />, label: 'Teams', path: '/teams' },
   ];
-
-  const employeeMenuItems = [
-    { icon: '✐ᝰ', label: 'Dashboard', path: '/dashboard' },
-    { icon: '𓂃🖊', label: 'My Tasks', path: '/tasks/my' },
-  ];
-
-  const menuItems = isManager ? managerMenuItems : employeeMenuItems;
 
   return (
     <aside className={`${collapsed ? 'w-16' : 'w-64'} bg-[#0d0d0d] border-r border-gray-800 transition-all duration-300 flex flex-col`}>
@@ -54,7 +47,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 
       <nav className="flex-1 p-3">
         <ul className="space-y-1">
-          {menuItems.map((item) => (
+          {baseItems.map((item) => (
             <li key={item.path}>
               <button
                 onClick={() => router.push(item.path)}
@@ -69,18 +62,47 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
               </button>
             </li>
           ))}
+
+          {/* Manager-only link */}
+          {isManager && (
+            <li>
+              <button
+                onClick={() => router.push('/management')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition ${
+                  pathname === '/management'
+                    ? 'bg-gray-800 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                }`}
+              >
+                <span className="w-6 text-center"><Shield className="w-5 h-5" /></span>
+                {!collapsed && <span>Management</span>}
+              </button>
+            </li>
+          )}
+
+          {/* Settings */}
+          <li>
+            <button
+              onClick={() => router.push('/settings')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition ${
+                pathname === '/settings'
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+              }`}
+            >
+              <span className="w-6 text-center"><Settings className="w-5 h-5" /></span>
+              {!collapsed && <span>Settings</span>}
+            </button>
+          </li>
         </ul>
       </nav>
 
       <div className="p-3 border-t border-gray-800">
         <button
-          onClick={() => {
-            localStorage.clear();
-            window.location.href = '/login';
-          }}
+          onClick={() => logout()}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition"
         >
-          <span className="w-6 text-center">🚪</span>
+          <span className="w-6 text-center"><LogOut className="w-5 h-5" /></span>
           {!collapsed && <span>Logout</span>}
         </button>
       </div>
