@@ -40,7 +40,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signin`, {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/signin`;
+    console.debug('[AuthContext] login url', url);
+    console.debug('[AuthContext] login payload', { email, password: password ? '***' : '' });
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -51,9 +55,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const error = await response.json();
         errorMessage = error.message || errorMessage;
-      } catch {
+      } catch (err) {
+        console.warn('[AuthContext] login error parsing response', err);
         errorMessage = `Login failed: ${response.status} ${response.statusText}`;
       }
+      console.error('[AuthContext] login failed', {
+        status: response.status,
+        statusText: response.statusText,
+        url,
+      });
       throw new Error(errorMessage);
     }
 
@@ -68,7 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (userData: any) => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signup`, {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`;
+    console.debug('[AuthContext] signup url', url);
+    console.debug('[AuthContext] signup payload', userData);
+    console.debug('[AuthContext] env NEXT_PUBLIC_API_URL', process.env.NEXT_PUBLIC_API_URL);
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
@@ -79,13 +94,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const error = await response.json();
         errorMessage = error.message || errorMessage;
-      } catch {
+      } catch (err) {
+        console.warn('[AuthContext] signup error parsing response', err);
         errorMessage = `Signup failed: ${response.status} ${response.statusText}`;
       }
+      console.error('[AuthContext] signup failed', {
+        status: response.status,
+        statusText: response.statusText,
+        url,
+      });
       throw new Error(errorMessage);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.debug('[AuthContext] signup response', data);
+
+    return data;
   };
 
   const logout = () => {

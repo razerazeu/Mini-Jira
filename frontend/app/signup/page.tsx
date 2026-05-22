@@ -15,7 +15,7 @@ export default function SignupPage() {
     name: '',
     email: '',
     password: '',
-    role: 'Employee',
+    role: 'EMPLOYEE',
     teamId: undefined,
   });
 
@@ -23,11 +23,14 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
+    console.debug('[SignupPage] submitting', formData);
+
     try {
       await signup(formData);
       router.push('/login?registered=true');
     } catch (err: any) {
+      console.error('[SignupPage] signup error', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -111,7 +114,7 @@ export default function SignupPage() {
           </div>
           
 
-          <input type="hidden" name="role" value="Employee" />
+          <input type="hidden" name="role" value="EMPLOYEE" />
           
           <button
             type="submit"
