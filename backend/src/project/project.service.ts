@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,6 +10,7 @@ import { CreateProjectDto } from './create-project.dto';
 import { UpdateProjectDto } from './update-project.dto';
 import { DynamoDBService } from '../aws/dynamodb.service';
 import { TeamService } from '../team/team.service';
+import { isManager } from '../auth/role.utils';
 
 @Injectable()
 export class ProjectService {
@@ -57,16 +59,23 @@ export class ProjectService {
     return project;
   }
 
-  async findAll() {
-    if (this.useDynamo) {
-      const result = await this.dynamo.scan({ TableName: this.tableName });
-      return result.Items || [];
+  async findAll(user?: any) {
+    const projects = this.useDynamo
+      ? ((await this.dynamo.scan({ TableName: this.tableName })).Items || [])
+      : this.projects;
+
+    if (!user || isManager(user)) {
+      return projects;
     }
 
-    return this.projects;
+    if (!user.teamId) {
+      throw new ForbiddenException('User does not belong to a team');
+    }
+
+    return projects.filter((project) => project.teamId === user.teamId);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: any) {
     const project = this.useDynamo
       ? await this.getProjectFromTable(id)
       : this.projects.find((p) => p.id === id || p.projectId === id);
@@ -75,6 +84,10 @@ export class ProjectService {
       throw new NotFoundException(
         'Project not found',
       );
+    }
+
+    if (user && !this.canAccessProject(project, user)) {
+      throw new ForbiddenException('You cannot access this project');
     }
 
     return project;
@@ -156,6 +169,14 @@ export class ProjectService {
     }
 
     await this.teamService.findOne(teamId);
+  }
+
+  private canAccessProject(project: any, user: any) {
+    if (isManager(user)) {
+      return true;
+    }
+
+    return Boolean(user?.teamId && project.teamId === user.teamId);
   }
 
   private definedOnly<T extends Record<string, any>>(value: T): Partial<T> {

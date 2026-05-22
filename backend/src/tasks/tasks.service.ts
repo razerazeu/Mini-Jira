@@ -200,9 +200,9 @@ export class TasksService {
     const task = await this.findOneRaw(id, user);
     const previousStatus = task.status;
 
-    if (!isManager(user) && task.assigneeId !== this.getUserId(user)) {
+    if (!isManager(user) && dto.status === TaskStatus.DONE) {
       throw new ForbiddenException(
-        'Only the task assignee can update task status',
+        'Only a manager can mark a task as done',
       );
     }
 
@@ -437,10 +437,7 @@ export class TasksService {
       throw new NotFoundException('Task not found');
     }
 
-    if (
-      !isManager(user) &&
-      task.teamId !== user.teamId
-    ) {
+    if (!this.canAccessTask(task, user)) {
       throw new ForbiddenException(
         'You cannot access this task',
       );
@@ -661,6 +658,19 @@ export class TasksService {
     if (!isManager(user)) {
       throw new ForbiddenException('Manager access required');
     }
+  }
+
+  private canAccessTask(task: any, user: any) {
+    if (isManager(user)) {
+      return true;
+    }
+
+    const userId = this.getUserId(user);
+
+    return (
+      Boolean(userId && task.assigneeId === userId) ||
+      Boolean(user?.teamId && task.teamId === user.teamId)
+    );
   }
 
   private getUserId(user: any) {
