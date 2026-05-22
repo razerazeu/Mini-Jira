@@ -34,10 +34,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (storedToken && storedUser) {
       try {
+        const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse stored user:', error);
+        setUser(parsedUser);
+      } catch (err) {
+        // Invalid JSON in localStorage, clear it
+        console.warn('[AuthContext] Failed to parse stored user', err);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }

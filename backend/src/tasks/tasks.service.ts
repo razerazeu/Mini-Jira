@@ -526,7 +526,7 @@ export class TasksService {
   private async publishTaskAssignedEvent(task: any, user: any) {
     const topicArn = process.env.SNS_TASK_ASSIGNMENT_TOPIC_ARN;
 
-    if (!this.useDynamo || !topicArn) {
+    if (!topicArn) {
       return;
     }
 
