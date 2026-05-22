@@ -26,6 +26,7 @@ export interface TaskImage {
   replacedAt?: string;
   deletedAt?: string;
   displayUrl?: string;
+  thumbnailUrl?: string;
 
   /**
    * Used when image is replaced/deleted from the task view.

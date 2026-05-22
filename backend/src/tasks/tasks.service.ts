@@ -90,14 +90,28 @@ export class TasksService {
     await this.publishTaskAssignedEvent(task, user);
 
     if (file) {
-      return this.handleImageUpload(task.taskId, file, user, 'IMAGE_UPLOADED');
+      await this.handleImageUpload(
+        task.taskId,
+        file,
+        user,
+        'IMAGE_UPLOADED',
+      );
+      return this.withImageUrls(task);
     }
 
     return this.withImageUrls(task);
   }
 
-  async findAll(user: any) {
+  async findAll(user: any, teamId?: string) {
     if (isManager(user)) {
+      if (teamId && teamId !== 'all') {
+        const items = this.useDynamo
+          ? await this.findTasksByTeam(teamId)
+          : this.tasks.filter((task) => task.teamId === teamId);
+
+        return Promise.all(items.map((task) => this.withImageUrls(task)));
+      }
+
       const items = this.useDynamo
         ? (await this.dynamo.scan({ TableName: this.tableName })).Items || []
         : this.tasks;
@@ -124,7 +138,16 @@ export class TasksService {
     return this.withImageUrls(task);
   }
 
-  async update(id: string, updateTaskDto: UpdateTaskDto, user: any) {
+  async findActivityByTask(id: string, user: any) {
+    await this.findOneRaw(id, user);
+    return this.activityLog.findByTask(id);
+  }
+
+  async update(
+    id: string,
+    updateTaskDto: UpdateTaskDto,
+    user: any,
+  ) {
     this.assertManager(user);
 
     const resolvedTask = await this.findOneRaw(id, user);
@@ -716,14 +739,25 @@ export class TasksService {
       return image;
     }
 
+    const displayUrl = await this.s3.getPresignedGetUrl(
+      image.originalBucket,
+      image.originalKey,
+      3600,
+      image.originalVersionId,
+    );
+
+    const thumbnailUrl = image.resizedBucket && image.resizedKey
+      ? await this.s3.getPresignedGetUrl(
+          image.resizedBucket,
+          image.resizedKey,
+          3600,
+        )
+      : null;
+
     return {
       ...image,
-      displayUrl: await this.s3.getPresignedGetUrl(
-        image.originalBucket,
-        image.originalKey,
-        3600,
-        image.originalVersionId,
-      ),
+      displayUrl,
+      thumbnailUrl: thumbnailUrl || undefined,
     };
   }
 

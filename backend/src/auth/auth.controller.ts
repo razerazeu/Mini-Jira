@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import jwt from 'jsonwebtoken';
 import { CognitoService } from './cognito.service';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
@@ -79,6 +80,29 @@ export class AuthController {
 
       const tokens = result.AuthenticationResult;
 
+      // Decode the ID token to get userId (sub claim)
+      let userId: string | null = null;
+      let user: any = null;
+
+      try {
+        if (tokens?.IdToken) {
+          const decoded: any = jwt.decode(tokens.IdToken);
+          userId = decoded?.sub;
+
+          // Fetch user info from DynamoDB using userId
+          if (userId) {
+            const userResult = await this.dynamoDBService.get({
+              TableName: this.dynamoDBService.table('users'),
+              Key: { userId },
+            });
+            user = userResult.Item || null;
+          }
+        }
+      } catch (err) {
+        // If we can't decode or fetch user, that's okay - user might not be in DynamoDB yet
+        console.warn('Failed to fetch user info during signin', err);
+      }
+
       return {
         challengeName: result.ChallengeName,
         session: result.Session,
@@ -87,6 +111,12 @@ export class AuthController {
         refreshToken: tokens?.RefreshToken,
         tokenType: tokens?.TokenType,
         expiresIn: tokens?.ExpiresIn,
+        user: user || {
+          userId: userId || 'unknown',
+          email: body.email,
+          name: '',
+          role: 'EMPLOYEE',
+        },
         tokens,
       };
     } catch (error) {

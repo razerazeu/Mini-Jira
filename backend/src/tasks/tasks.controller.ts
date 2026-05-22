@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -39,8 +40,11 @@ export class TasksController {
   }
 
   @Get()
-  findAll(@Req() req: any) {
-    return this.tasksService.findAll(req.user);
+  findAll(
+    @Req() req: any,
+    @Query('teamId') teamId?: string,
+  ) {
+    return this.tasksService.findAll(req.user, teamId);
   }
 
   @Get(':id')
@@ -52,6 +56,14 @@ export class TasksController {
       id,
       req.user,
     );
+  }
+
+  @Get(':id/activities')
+  findActivities(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    return this.tasksService.findActivityByTask(id, req.user);
   }
 
   @Put(':id')
