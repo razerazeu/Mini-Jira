@@ -41,6 +41,11 @@ export class TeamController {
     return this.teamService.findOne(id);
   }
 
+  @Get(':id/members')
+  async getTeamMembers(@Param('id') id: string) {
+    return this.teamService.getTeamMembers(id);
+  }
+
   @Put(':id')
   @UseGuards(RoleGuard)
   update(

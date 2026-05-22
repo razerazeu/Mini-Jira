@@ -23,6 +23,34 @@ export class UserService {
     this.tableName = this.dynamo.table('users');
   }
 
+  async findAll() {
+    if (!this.tableName) {
+      throw new NotFoundException('Users table not configured');
+    }
+
+    const result = await this.dynamo.scan({
+      TableName: this.tableName,
+    });
+
+    return result.Items || [];
+  }
+
+  async findByTeam(teamId: string) {
+    if (!this.tableName) {
+      throw new NotFoundException('Users table not configured');
+    }
+
+    const result = await this.dynamo.scan({
+      TableName: this.tableName,
+      FilterExpression: 'teamId = :teamId',
+      ExpressionAttributeValues: {
+        ':teamId': teamId,
+      },
+    });
+
+    return result.Items || [];
+  }
+
   async findOne(userId: string) {
     if (!this.tableName) {
       throw new NotFoundException('Users table not configured');
