@@ -32,12 +32,6 @@ const columns = [
 
 //just for style lol
 const priorityColors: Record<string, { bg: string; border: string; text: string; glow: string }> = {
-  URGENT: {
-    bg: 'bg-red-950/30',
-    border: 'border-red-500/50',
-    text: 'text-red-400',
-    glow: 'shadow-red-500/20'
-  },
   HIGH: {
     bg: 'bg-orange-950/30',
     border: 'border-orange-500/50',
@@ -60,7 +54,6 @@ const priorityColors: Record<string, { bg: string; border: string; text: string;
 
 //also style
 const priorityBadges: Record<string, string> = {
-  URGENT: 'bg-red-600 text-white',
   HIGH: 'bg-orange-600 text-white',
   MEDIUM: 'bg-yellow-600 text-black',
   LOW: 'bg-green-600 text-white',
@@ -246,16 +239,6 @@ export default function DashboardPage() {
                   All
                 </button>
                 <button
-                  onClick={() => setFilterPriority('URGENT')}
-                  className={`px-3 py-1.5 rounded-md text-sm transition flex items-center gap-1 ${
-                    filterPriority === 'URGENT'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-[#1a1a1a] text-red-400 hover:bg-red-950/50'
-                  }`}
-                >
-                  🔴 Urgent
-                </button>
-                <button
                   onClick={() => setFilterPriority('HIGH')}
                   className={`px-3 py-1.5 rounded-md text-sm transition flex items-center gap-1 ${
                     filterPriority === 'HIGH'
@@ -308,12 +291,11 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="px-3 py-2 border-b border-gray-800 flex gap-2 text-xs">
-                  <span className="text-red-400">🔴</span>
                   <span className="text-orange-400">🟠</span>
                   <span className="text-yellow-400">🟡</span>
                   <span className="text-green-400">🟢</span>
                   <span className="text-gray-500 ml-auto">
-                    {getPriorityCount(column.id, 'URGENT')}U / {getPriorityCount(column.id, 'HIGH')}H / {getPriorityCount(column.id, 'MEDIUM')}M / {getPriorityCount(column.id, 'LOW')}L
+                    {getPriorityCount(column.id, 'HIGH')}H / {getPriorityCount(column.id, 'MEDIUM')}M / {getPriorityCount(column.id, 'LOW')}L
                   </span>
                 </div>
 

@@ -7,18 +7,24 @@ import Sidebar from '../../../components/sidebar';
 
 interface Team {
   id: string;
+  teamId?: string;
   name: string;
+  description?: string;
 }
 
 interface User {
   id: string;
+  userId?: string;
   name: string;
   email: string;
+  teamId?: string;
 }
 
 interface Project {
   id: string;
   name: string;
+  teamId?: string;
+  description?: string;
 }
 
 export default function CreateTaskPage() {
@@ -37,10 +43,11 @@ export default function CreateTaskPage() {
   const [assigneeId, setAssigneeId] = useState('');
   const [projectId, setProjectId] = useState('');
   
-  //for the dropdowns in creating a task
+  // For the dropdowns in creating a task
   const [teams, setTeams] = useState<Team[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
@@ -54,14 +61,22 @@ export default function CreateTaskPage() {
     if (token && isManager) {
       fetchTeams();
       fetchProjects();
+      fetchAllUsers();
     }
   }, [token, isManager]);
 
+  // Filter projects when team changes
   useEffect(() => {
     if (teamId) {
-      fetchUsersByTeam(teamId);
+      const filtered = projects.filter(p => p.teamId === teamId || !p.teamId);
+      setFilteredProjects(filtered);
+      if (projectId && !filtered.find(p => p.id === projectId)) {
+        setProjectId('');
+      }
+    } else {
+      setFilteredProjects(projects);
     }
-  }, [teamId]);
+  }, [teamId, projects, projectId]);
 
   const fetchTeams = async () => {
     try {
@@ -73,7 +88,8 @@ export default function CreateTaskPage() {
         const data = await response.json();
         setTeams(data);
         if (data.length === 1) {
-          setTeamId(data[0].id);
+          const firstTeamId = data[0].id || data[0].teamId;
+          setTeamId(String(firstTeamId));
         }
       }
     } catch (error) {
@@ -83,16 +99,27 @@ export default function CreateTaskPage() {
     }
   };
 
-  const fetchUsersByTeam = async (teamId: string) => {
+  const fetchAllUsers = async () => {
     setLoadingUsers(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users?teamId=${teamId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
       if (response.ok) {
         const data = await response.json();
-        setUsers(data);
+        // Map users to ensure we have the correct ID format
+        const mappedUsers = data.map((userData: any) => ({
+          id: userData.userId || userData.id || userData.email,  // Try userId first, then id, then email
+          userId: userData.userId,
+          name: userData.name,
+          email: userData.email,
+          teamId: userData.teamId,
+        }));
+        setUsers(mappedUsers);
+        console.log('Users loaded:', mappedUsers);
+      } else {
+        console.error('Failed to fetch users:', response.status);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -110,6 +137,7 @@ export default function CreateTaskPage() {
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
+        setFilteredProjects(data);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -121,17 +149,38 @@ export default function CreateTaskPage() {
     setLoading(true);
     setError('');
     
+    // Extra validation
+    if (!teamId) {
+      setError('Please select a team');
+      setLoading(false);
+      return;
+    }
+    
+    if (!assigneeId) {
+      setError('Please select an assignee');
+      setLoading(false);
+      return;
+    }
+    
+    if (!projectId) {
+      setError('Please select a project');
+      setLoading(false);
+      return;
+    }
+    
     try {
       const taskData = {
         title,
         description,
         priority,
         deadline: deadline || undefined,
-        teamId,
-        assigneeId,
+        teamId: String(teamId),
+        assigneeId: String(assigneeId),
         projectId: projectId || undefined,
         status: 'TODO',
       };
+      
+      console.log('🔍 Creating task with data:', taskData);
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks`, {
         method: 'POST',
@@ -148,13 +197,18 @@ export default function CreateTaskPage() {
         router.push('/dashboard');
       } else {
         setError(data.message || 'Failed to create task');
+        console.error('Task creation error:', data);
       }
     } catch (error) {
+      console.error('Error creating task:', error);
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  // Helper to get team display ID
+  const getTeamId = (team: Team) => team.id || team.teamId;
 
   if (authLoading) {
     return (
@@ -182,6 +236,7 @@ export default function CreateTaskPage() {
               </div>
             )}
 
+            {/* Title */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Title <span className="text-red-400">*</span>
@@ -196,6 +251,7 @@ export default function CreateTaskPage() {
               />
             </div>
 
+            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Description
@@ -209,6 +265,7 @@ export default function CreateTaskPage() {
               />
             </div>
 
+            {/* Priority */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Priority
@@ -221,7 +278,6 @@ export default function CreateTaskPage() {
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>
                 <option value="HIGH">High</option>
-                <option value="URGENT">Urgent</option>
               </select>
             </div>
 
@@ -249,10 +305,18 @@ export default function CreateTaskPage() {
                 className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
               >
                 <option value="">Select a team</option>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>{team.name}</option>
-                ))}
+                {teams.map((team) => {
+                  const teamIdentifier = getTeamId(team);
+                  return (
+                    <option key={teamIdentifier} value={teamIdentifier}>
+                      {team.name}
+                    </option>
+                  );
+                })}
               </select>
+              {loadingTeams && (
+                <p className="text-sm text-gray-500 mt-1">Loading teams...</p>
+              )}
             </div>
 
             <div>
@@ -263,39 +327,64 @@ export default function CreateTaskPage() {
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
                 required
-                disabled={!teamId || loadingUsers}
+                disabled={loadingUsers}
                 className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
               >
                 <option value="">Select a user</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
+                {users.map((userItem) => (
+                  <option key={userItem.id} value={userItem.id}>
+                    {userItem.name} ({userItem.email})
+                    {userItem.teamId && teamId && userItem.teamId !== teamId && ' ⚠️ Different team'}
+                  </option>
                 ))}
               </select>
-              {teamId && !loadingUsers && users.length === 0 && (
-                <p className="text-sm text-yellow-500 mt-1">No users in this team yet</p>
+              {!loadingUsers && users.length === 0 && (
+                <p className="text-sm text-yellow-500 mt-1">No users found. Create users first.</p>
+              )}
+              {assigneeId && users.find(u => u.id === assigneeId)?.teamId && 
+               users.find(u => u.id === assigneeId)?.teamId !== teamId && (
+                <p className="text-sm text-yellow-500 mt-1">
+                  ⚠️ Warning: This user belongs to a different team. The task may not appear in their dashboard.
+                </p>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Project (Optional)
+                Project <span className="text-red-400">*</span>
               </label>
               <select
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:ring-1 focus:ring-blue-500"
+                required
+                disabled={!teamId}
+                className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
               >
-                <option value="">No project</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>{project.name}</option>
+                <option value="">Select a project</option>
+                {filteredProjects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                    {project.teamId === teamId ? ' ✓' : project.teamId ? ' (Other team)' : ' (No team)'}
+                  </option>
                 ))}
               </select>
+              {teamId && filteredProjects.length === 0 && (
+                <p className="text-sm text-yellow-500 mt-1">
+                  No projects available for this team. Create a project first.
+                </p>
+              )}
+              {!teamId && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Select a team first to see available projects.
+                </p>
+              )}
             </div>
 
+            {/* Buttons */}
             <div className="flex gap-3 pt-4">
               <button
                 type="submit"
-                disabled={loading || !title || !teamId || !assigneeId}
+                disabled={loading || !title || !teamId || !assigneeId || !projectId}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition disabled:opacity-50 font-medium"
               >
                 {loading ? 'Creating...' : 'Create Task'}
