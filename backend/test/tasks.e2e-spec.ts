@@ -18,7 +18,7 @@ describe('Tasks API behaviors', () => {
       userId: 'u1',
       email: 'u1@example.com',
       role: 'EMPLOYEE',
-      teamId: createdTeamId,
+      teamId: undefined,
       isActive: true,
     },
   };
@@ -103,6 +103,21 @@ describe('Tasks API behaviors', () => {
       .expect(400);
   });
 
+  it('rejects task deadlines before today on create (400)', async () => {
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .set(managerAuth)
+      .send({
+        projectId: 'p1',
+        title: 'past deadline',
+        priority: 'MEDIUM',
+        deadline: dateOnly(-1),
+        assigneeId: 'u1',
+        teamId: 'team-A',
+      })
+      .expect(400);
+  });
+
   it('create, update, status, delete, and forbidden team access', async () => {
     const teamRes = await request(app.getHttpServer())
       .post('/teams')
@@ -111,7 +126,6 @@ describe('Tasks API behaviors', () => {
       .expect(201);
     const teamId = teamRes.body.teamId;
     createdTeamId = teamId;
-    users.u1.teamId = teamId;
 
     await request(app.getHttpServer())
       .post('/teams')
@@ -153,6 +167,12 @@ describe('Tasks API behaviors', () => {
       .expect(201);
 
     const task = tRes.body;
+
+    await request(app.getHttpServer())
+      .put(`/tasks/${task.id}`)
+      .set(managerAuth)
+      .send({ deadline: dateOnly(-1) })
+      .expect(400);
 
     // update as same team manager
     await request(app.getHttpServer())
@@ -202,3 +222,9 @@ describe('Tasks API behaviors', () => {
       });
   }, 20000);
 });
+
+function dateOnly(dayOffset: number) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + dayOffset);
+  return date.toISOString().slice(0, 10);
+}
