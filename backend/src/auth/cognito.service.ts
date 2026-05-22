@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  AdminConfirmSignUpCommand,
   AdminGetUserCommand,
   AdminUpdateUserAttributesCommand,
   AttributeType,
@@ -36,8 +37,8 @@ export class CognitoService {
       this.configService.getOrThrow<string>('COGNITO_USER_POOL_ID');
   }
 
-  signUp(input: SignUpInput) {
-    return this.client.send(
+  async signUp(input: SignUpInput) {
+    const result = await this.client.send(
       new SignUpCommand({
         ClientId: this.appClientId,
         Username: input.email,
@@ -45,6 +46,18 @@ export class CognitoService {
         UserAttributes: this.toUserAttributes(input),
       }),
     );
+
+    await this.client.send(
+      new AdminConfirmSignUpCommand({
+        UserPoolId: this.userPoolId,
+        Username: input.email,
+      }),
+    );
+
+    return {
+      ...result,
+      UserConfirmed: true,
+    };
   }
 
   signIn(email: string, password: string) {
