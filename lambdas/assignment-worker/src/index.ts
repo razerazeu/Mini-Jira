@@ -141,13 +141,18 @@ async function publishAssignmentMetric(event: TaskAssignedEvent) {
           Unit: 'Count',
           Dimensions: dimensions,
         },
+        {
+          MetricName: 'TasksAssigned',
+          Value: 1,
+          Unit: 'Count',
+        },
       ],
     }),
   );
 
   console.log('Published assignment metric', {
     namespace: process.env.CLOUDWATCH_NAMESPACE || 'MiniJira',
-    metricName: 'TasksAssignedPerTeam',
+    metricNames: ['TasksAssignedPerTeam', 'TasksAssigned'],
     teamId: task.teamId,
   });
 }
