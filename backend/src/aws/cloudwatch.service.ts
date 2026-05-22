@@ -55,4 +55,23 @@ export class CloudWatchService {
       ],
     });
   }
+
+  recordTaskTimeToClose(teamId: string, seconds: number) {
+    return this.putMetricData({
+      Namespace: process.env.CLOUDWATCH_NAMESPACE || 'MiniJira',
+      MetricData: [
+        {
+          MetricName: 'TaskTimeToCloseSeconds',
+          Value: seconds,
+          Unit: 'Seconds',
+          Dimensions: [
+            {
+              Name: 'TeamId',
+              Value: teamId,
+            },
+          ],
+        },
+      ],
+    });
+  }
 }

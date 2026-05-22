@@ -15,6 +15,7 @@ import { Task } from './task';
 import { S3Service } from '../aws/s3.service';
 import { DynamoDBService } from '../aws/dynamodb.service';
 import { SNSService } from '../aws/sns.service';
+import { CloudWatchService } from '../aws/cloudwatch.service';
 import { ActivityLogService } from '../activitylog/activitylog.service';
 import { ProjectService } from '../project/project.service';
 import { TeamService } from '../team/team.service';
@@ -33,6 +34,7 @@ export class TasksService {
     private readonly s3: S3Service,
     private readonly dynamo: DynamoDBService,
     private readonly sns: SNSService,
+    private readonly cloudWatch: CloudWatchService,
     private readonly activityLog: ActivityLogService,
     private readonly projectService: ProjectService,
     private readonly teamService: TeamService,
@@ -83,6 +85,10 @@ export class TasksService {
       actorName: this.getActorLabel(user),
       message: `${this.getActorLabel(user)} created task ${this.getTaskLabel(task)}`,
     });
+
+    await this.recordMetric('recordTaskCreated', () =>
+      this.cloudWatch.recordTaskCreated(String(task.teamId)),
+    );
 
     await this.publishTaskAssignedEvent(task, user);
 
@@ -200,9 +206,14 @@ export class TasksService {
       );
     }
 
+    const now = new Date().toISOString();
     task.status = dto.status;
 
-    task.updatedAt = new Date().toISOString();
+    if (previousStatus !== TaskStatus.DONE && dto.status === TaskStatus.DONE) {
+      task.closedAt = now;
+    }
+
+    task.updatedAt = now;
 
     if (this.useDynamo) {
       await this.dynamo.put({
@@ -225,6 +236,22 @@ export class TasksService {
       reason: dto.reason,
       message: `${this.getActorLabel(user)} moved task ${this.getTaskLabel(task)} from ${previousStatus} to ${dto.status}`,
     });
+
+    if (previousStatus !== TaskStatus.DONE && dto.status === TaskStatus.DONE) {
+      await this.recordMetric('recordTaskClosed', () =>
+        this.cloudWatch.recordTaskClosed(String(task.teamId)),
+      );
+
+      const timeToCloseSeconds = this.getTimeToCloseSeconds(task);
+      if (timeToCloseSeconds !== null) {
+        await this.recordMetric('recordTaskTimeToClose', () =>
+          this.cloudWatch.recordTaskTimeToClose(
+            String(task.teamId),
+            timeToCloseSeconds,
+          ),
+        );
+      }
+    }
 
     return this.withImageUrls(task);
   }
@@ -646,6 +673,31 @@ export class TasksService {
 
   private getTaskLabel(task: any) {
     return task?.title || task?.taskId || task?.id || 'task';
+  }
+
+  private getTimeToCloseSeconds(task: any) {
+    const createdAtMs = Date.parse(task.createdAt);
+    const closedAtMs = Date.parse(task.closedAt);
+
+    if (Number.isNaN(createdAtMs) || Number.isNaN(closedAtMs)) {
+      return null;
+    }
+
+    return Math.max(0, Math.round((closedAtMs - createdAtMs) / 1000));
+  }
+
+  private async recordMetric(
+    metricName: string,
+    record: () => Promise<unknown>,
+  ) {
+    try {
+      await record();
+    } catch (error) {
+      console.error('Failed to publish CloudWatch metric', {
+        metricName,
+        error,
+      });
+    }
   }
 
   private async withImageUrls(task: any) {
