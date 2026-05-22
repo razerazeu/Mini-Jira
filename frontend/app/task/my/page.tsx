@@ -144,7 +144,7 @@ export default function MyTasksPage() {
             <button
               key={task.taskId}
               type="button"
-              onClick={() => router.push(`/tasks/${task.taskId}`)}
+              onClick={() => router.push(`/task/${task.taskId}`)}
               className="group rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="flex items-start justify-between gap-4">

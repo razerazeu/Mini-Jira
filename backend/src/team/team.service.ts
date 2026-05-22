@@ -72,6 +72,24 @@ export class TeamService {
     return team;
   }
 
+  async getTeamMembers(teamId: string) {
+    if (!this.tableName) {
+      throw new NotFoundException('Teams table not configured');
+    }
+
+    // Get all users from Users table that have this teamId
+    const usersTable = this.dynamo.table('users');
+    const result = await this.dynamo.scan({
+      TableName: usersTable,
+      FilterExpression: 'teamId = :teamId',
+      ExpressionAttributeValues: {
+        ':teamId': teamId,
+      },
+    });
+
+    return result.Items || [];
+  }
+
   update(
     id: string,
     updateTeamDto: UpdateTeamDto,

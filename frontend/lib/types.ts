@@ -16,6 +16,11 @@ export interface Task {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  image?: {
+    displayUrl?: string;
+    thumbnailUrl?: string;
+    fileName?: string;
+  };
 }
 
 export interface Comment {

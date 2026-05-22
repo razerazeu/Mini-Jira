@@ -14,6 +14,11 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const pathname = usePathname();
   const { user, isManager, logout } = useAuth();
 
+  // Don't show sidebar on login or signup pages
+  if (pathname === '/login' || pathname === '/signup') {
+    return null;
+  }
+
   const baseItems = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', path: '/dashboard' },
     { icon: <FolderOpen className="w-5 h-5" />, label: 'Projects', path: '/projects' },
@@ -21,7 +26,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   ];
 
   return (
-    <aside className={`${collapsed ? 'w-16' : 'w-64'} bg-[#0d0d0d] border-r border-gray-800 transition-all duration-300 flex flex-col`}>
+    <aside className={`${collapsed ? 'w-16' : 'w-64'} bg-[#0d0d0d] border-r border-gray-800 transition-all duration-300 flex flex-col h-screen`}>
       {/* Logo */}
       <div className="h-14 flex items-center justify-between px-4 border-b border-gray-800">
         {!collapsed && <span className="text-white font-semibold text-lg">Mini<span className="text-blue-500">-Jira</span></span>}
@@ -30,7 +35,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
         </button>
       </div>
 
-
+      {/* User Info */}
       <div className="p-3 border-b border-gray-800">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
@@ -45,6 +50,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
         </div>
       </div>
 
+      {/* Navigation Links */}
       <nav className="flex-1 p-3">
         <ul className="space-y-1">
           {baseItems.map((item) => (
@@ -97,10 +103,14 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
         </ul>
       </nav>
 
+      {/* Logout Button at Bottom */}
       <div className="p-3 border-t border-gray-800">
         <button
-          onClick={() => logout()}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition"
+          onClick={() => {
+            logout();
+            router.push('/login');
+          }}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition text-gray-400 hover:text-red-400 hover:bg-red-500/10"
         >
           <span className="w-6 text-center"><LogOut className="w-5 h-5" /></span>
           {!collapsed && <span>Logout</span>}

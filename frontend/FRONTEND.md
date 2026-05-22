@@ -93,7 +93,7 @@ frontend/
 │   ├── login/                    # Login page
 │   ├── signup/                   # Signup page
 │   ├── dashboard/                # Main dashboard with Kanban
-│   ├── tasks/                    # Task detail pages
+│   ├── task/                    # Task detail pages
 │   ├── projects/                 # Project management pages
 │   ├── layout.tsx                # Root layout with Navigation
 │   ├── page.tsx                  # Home page
@@ -170,7 +170,7 @@ Central hub for task management with:
 
 **Routes:**
 - **Modal:** Accessible from Kanban by clicking a task card
-- **Full Page:** `/tasks/[taskId]`
+- **Full Page:** `/task/[taskId]`
 
 Features:
 - View all task metadata (title, description, priority, deadline, assignee)

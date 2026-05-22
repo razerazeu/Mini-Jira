@@ -6,10 +6,12 @@ import { ActivityLog } from './activitylog';
 @Injectable()
 export class ActivityLogService {
   private readonly tableName?: string;
+  private readonly taskIdIndexName?: string;
   private readonly useDynamo: boolean;
 
   constructor(private readonly dynamo: DynamoDBService) {
     this.tableName = this.dynamo.table('activityLog');
+    this.taskIdIndexName = process.env.ACTIVITY_LOG_TASK_INDEX;
     this.useDynamo = process.env.USE_DYNAMODB !== 'false' && !!this.tableName;
   }
 
@@ -51,5 +53,32 @@ export class ActivityLogService {
     return Object.fromEntries(
       Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined),
     ) as T;
+  }
+
+  async findByTask(taskId: string) {
+    if (!this.useDynamo) {
+      return [] as ActivityLog[];
+    }
+
+    if (this.taskIdIndexName) {
+      const result = await this.dynamo.query({
+        TableName: this.tableName,
+        IndexName: this.taskIdIndexName,
+        KeyConditionExpression: 'taskId = :taskId',
+        ExpressionAttributeValues: {
+          ':taskId': taskId,
+        },
+      });
+      return (result.Items || []) as ActivityLog[];
+    }
+
+    const result = await this.dynamo.scan({
+      TableName: this.tableName,
+      FilterExpression: 'taskId = :taskId',
+      ExpressionAttributeValues: {
+        ':taskId': taskId,
+      },
+    });
+    return (result.Items || []) as ActivityLog[];
   }
 }
