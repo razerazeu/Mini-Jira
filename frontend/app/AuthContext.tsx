@@ -28,6 +28,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const normalizeRole = (role?: string | null) => role?.toUpperCase() || null;
+
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
@@ -66,13 +68,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let role = 'EMPLOYEE';
     let name = email.split('@')[0];
     let userId = email;
-    
+
     if (data.idToken) {
       try {
         const tokenParts = data.idToken.split('.');
         const payload = JSON.parse(atob(tokenParts[1]));
         console.log('Decoded token payload:', payload);
-        
+
         role = payload['custom:role'] || 'EMPLOYEE';
         name = payload.name || email.split('@')[0];
         userId = payload.sub || email;
@@ -80,13 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to decode token:', e);
       }
     }
-    
+
+    const backendUser = data.user || {};
     const userData: User = {
-      id: userId,
-      email: email,
-      name: name,
-      role: role,
-      teamId: null,
+      id: backendUser.userId || backendUser.id || userId,
+      email: backendUser.email || email,
+      name: backendUser.name || name,
+      role: backendUser.role || role,
+      teamId: backendUser.teamId ?? null,
     };
     
     console.log('User data being stored:', userData);
@@ -125,8 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  const isManager = user?.role === 'MANAGER';
-  const isEmployee = user?.role === 'EMPLOYEE';
+  const normalizedRole = normalizeRole(user?.role);
+  const isManager = normalizedRole === 'MANAGER' || normalizedRole === 'ADMIN';
+  const isEmployee = normalizedRole === 'EMPLOYEE';
 
   return (
     <AuthContext.Provider value={{ user, token, isManager, isEmployee, login, signup, logout, loading }}>

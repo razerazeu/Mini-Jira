@@ -1,13 +1,13 @@
-'use client';
-
 import { ProjectDetailPage } from '@/components/Projects';
 
 interface ProjectPageProps {
-  params: {
+  params: Promise<{
     projectId: string;
-  };
+  }>;
 }
 
-export default function ProjectPage({ params }: ProjectPageProps) {
-  return <ProjectDetailPage projectId={params.projectId} />;
+export default async function ProjectPage({ params }: ProjectPageProps) {
+  const { projectId } = await params;
+
+  return <ProjectDetailPage projectId={projectId} />;
 }

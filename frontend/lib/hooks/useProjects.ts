@@ -33,7 +33,10 @@ export const useProjects = () => {
       const response = await apiClient.get<Project[]>(`/projects`);
       setProjects(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load projects');
+      const status = err.response?.status;
+      setError(
+        status === 403 ? 'You do not have permission to view projects.' : err.response?.data?.message || 'Failed to load projects'
+      );
     } finally {
       setLoading(false);
     }

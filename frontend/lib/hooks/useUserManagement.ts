@@ -45,8 +45,12 @@ export const useUserManagement = () => {
       const response = await apiClient.get<UserWithTeam[]>(`/users`);
       setUsers(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load users');
-      console.error('Error fetching users:', err);
+      const status = err.response?.status;
+      setError(
+        status === 403
+          ? 'You do not have permission to view users.'
+          : err.response?.data?.message || 'Failed to load users'
+      );
     } finally {
       setLoading(false);
     }
@@ -57,7 +61,10 @@ export const useUserManagement = () => {
       const response = await apiClient.get<Team[]>(`/teams`);
       setTeams(response.data);
     } catch (err: any) {
-      console.error('Error fetching teams:', err);
+      const status = err.response?.status;
+      if (status !== 403) {
+        setError(err.response?.data?.message || 'Failed to load teams');
+      }
     }
   };
 

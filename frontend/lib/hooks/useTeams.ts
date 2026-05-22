@@ -41,7 +41,10 @@ export const useTeams = () => {
       const response = await apiClient.get<Team[]>(`/teams`);
       setTeams(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load teams');
+      const status = err.response?.status;
+      setError(
+        status === 403 ? 'You do not have permission to view teams.' : err.response?.data?.message || 'Failed to load teams'
+      );
     } finally {
       setLoading(false);
     }

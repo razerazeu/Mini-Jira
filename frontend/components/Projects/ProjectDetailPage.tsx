@@ -6,6 +6,8 @@ import { ArrowLeft, Loader, AlertCircle } from 'lucide-react';
 import { Task, TaskStatus } from '@/lib/types';
 import toast from 'react-hot-toast';
 import { apiClient } from '@/lib/apiClient';
+import { useAuth } from '@/app/AuthContext';
+import { AccessDenied } from '@/components/AccessDenied';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { KanbanBoard } from '@/components/Kanban';
 import { TaskDetailModal } from '@/components/TaskDetail';
@@ -28,9 +30,17 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
 
   const project = projects.find((p) => p.projectId === projectId);
 
+  const { user, isManager } = useAuth();
+
+  const canViewProject = isManager || (
+    !!project?.teamId && !!user?.teamId && String(project?.teamId) === String(user?.teamId)
+  );
+
   useEffect(() => {
-    fetchProjectTasks();
-  }, [projectId]);
+    if (canViewProject) {
+      fetchProjectTasks();
+    }
+  }, [projectId, canViewProject]);
 
   const fetchProjectTasks = async () => {
     setIsLoading(true);
@@ -87,10 +97,10 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
 
   if (isLoading && !project) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader className="w-12 h-12 text-gray-400 animate-spin mx-auto" />
-          <p className="text-gray-600 font-medium">Loading project...</p>
+          <p className="text-gray-400 font-medium">Loading project...</p>
         </div>
       </div>
     );
@@ -98,20 +108,20 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
 
   if (error && tasks.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="min-h-screen bg-black p-6 text-white">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6 font-medium"
+          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6 font-medium"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Projects
         </button>
-        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6 border border-red-200">
+        <div className="max-w-2xl mx-auto bg-[#0d0d0d] rounded-lg shadow p-6 border border-red-900">
           <div className="flex items-start gap-4">
-            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
+            <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-1" />
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Failed to Load Project</h2>
-              <p className="text-gray-600 mt-1">{error}</p>
+              <h2 className="text-lg font-semibold text-white">Failed to Load Project</h2>
+              <p className="text-gray-400 mt-1">{error}</p>
             </div>
           </div>
         </div>
@@ -120,27 +130,30 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    !canViewProject && project ? (
+      <AccessDenied title="Access Denied" message="You don't have permission to view this project." />
+    ) : (
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
+      <div className="bg-[#0d0d0d] border-b border-gray-800 shadow-sm sticky top-0 z-40">
         <div className="max-w-full px-6 py-4">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4 font-medium"
+            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-4 font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Projects
           </button>
 
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{project?.name || 'Project'}</h1>
+            <h1 className="text-3xl font-bold text-white">{project?.name || 'Project'}</h1>
             {project?.description && (
-              <p className="text-gray-600 mt-2">{project.description}</p>
+              <p className="text-gray-400 mt-2">{project.description}</p>
             )}
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+          <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-900">
             {['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'].map((status) => {
               const count = tasks.filter((t) => t.status === status).length;
               const icons = {
@@ -153,10 +166,10 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
                 <div key={status} className="flex items-center gap-3">
                   <span className="text-2xl">{icons[status as keyof typeof icons]}</span>
                   <div>
-                    <p className="text-xs text-gray-600 uppercase font-semibold">
+                    <p className="text-xs text-gray-400 uppercase font-semibold">
                       {status.replace(/_/g, ' ')}
                     </p>
-                    <p className="text-2xl font-bold text-gray-900">{count}</p>
+                    <p className="text-2xl font-bold text-white">{count}</p>
                   </div>
                 </div>
               );
@@ -174,10 +187,10 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         ) : tasks.length === 0 ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <div className="text-5xl mb-4">🎯</div>
-              <p className="text-gray-600 font-medium">No tasks in this project yet</p>
-              <p className="text-sm text-gray-500 mt-1">Create or assign tasks to get started</p>
-            </div>
+                <div className="text-5xl mb-4">🎯</div>
+                <p className="text-gray-400 font-medium">No tasks in this project yet</p>
+                <p className="text-sm text-gray-500 mt-1">Create or assign tasks to get started</p>
+              </div>
           </div>
         ) : (
           <KanbanBoard
@@ -202,5 +215,6 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         }}
       />
     </div>
+    )
   );
 }

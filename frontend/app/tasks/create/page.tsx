@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../AuthContext';
-import Sidebar from '../../../components/sidebar';
+import { AccessDenied } from '@/components/AccessDenied';
 
 interface Team {
   id: string;
@@ -32,7 +32,7 @@ export default function CreateTaskPage() {
   const { user, token, isManager, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
   
   // Form state
   const [title, setTitle] = useState('');
@@ -52,8 +52,8 @@ export default function CreateTaskPage() {
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && (!token || !isManager)) {
-      router.push('/dashboard');
+    if (!authLoading && !token) {
+      router.push('/login');
     }
   }, [token, isManager, authLoading, router]);
 
@@ -93,7 +93,6 @@ export default function CreateTaskPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching teams:', error);
     } finally {
       setLoadingTeams(false);
     }
@@ -122,7 +121,6 @@ export default function CreateTaskPage() {
         console.error('Failed to fetch users:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
     } finally {
       setLoadingUsers(false);
     }
@@ -140,7 +138,6 @@ export default function CreateTaskPage() {
         setFilteredProjects(data);
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
     }
   };
 
@@ -212,22 +209,27 @@ export default function CreateTaskPage() {
 
   if (authLoading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-black">
+      <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
+  if (!token) {
+    return null;
+  }
+
+  if (!isManager) {
+    return <AccessDenied title="Managers only" message="Only managers can create tasks." />;
+  }
+
   return (
-    <div className="flex h-screen bg-black">
-      <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+    <main className="overflow-auto">
+      <header className="h-14 bg-[#0d0d0d] border-b border-gray-800 flex items-center px-6">
+        <h1 className="text-white font-medium">Create New Task</h1>
+      </header>
 
-      <main className="flex-1 overflow-auto">
-        <header className="h-14 bg-[#0d0d0d] border-b border-gray-800 flex items-center px-6">
-          <h1 className="text-white font-medium">Create New Task</h1>
-        </header>
-
-        <div className="p-6 max-w-2xl mx-auto">
+      <div className="p-6 max-w-2xl mx-auto">
           <form onSubmit={handleSubmit} className="bg-[#0d0d0d] rounded-md border border-gray-800 p-6 space-y-5">
             
             {error && (
@@ -400,6 +402,5 @@ export default function CreateTaskPage() {
           </form>
         </div>
       </main>
-    </div>
   );
 }
