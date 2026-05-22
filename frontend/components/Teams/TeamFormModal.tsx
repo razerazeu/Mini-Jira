@@ -10,7 +10,7 @@ import { Team } from '@/lib/hooks/useTeams';
 
 const teamSchema = z.object({
   name: z.string().min(1, 'Team name is required').max(100),
-  description: z.string().max(500).optional().nullable(),
+  description: z.string().max(500).optional(),
 });
 
 type TeamFormData = z.infer<typeof teamSchema>;
