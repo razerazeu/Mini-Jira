@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   SNSClient,
+  ListSubscriptionsByTopicCommand,
   PublishCommand,
   SubscribeCommand,
   SetSubscriptionAttributesCommand,
@@ -36,7 +37,10 @@ export class SNSService {
   }
 
   subscribeEmailToTaskAssignments(email: string) {
-    return this.subscribeEmail(process.env.SNS_TASK_ASSIGNMENT_TOPIC_ARN, email);
+    return this.subscribeEmail(
+      process.env.SNS_TASK_ASSIGNMENT_TOPIC_ARN,
+      email,
+    );
   }
 
   subscribeEmailToDailyDigest(email: string) {
@@ -48,14 +52,67 @@ export class SNSService {
   }
 
   setEmailFilterPolicy(subscriptionArn: string, email: string) {
-    return this.client.send(
-      new SetSubscriptionAttributesCommand({
-        SubscriptionArn: subscriptionArn,
-        AttributeName: 'FilterPolicy',
-        AttributeValue: JSON.stringify({
-          assigneeEmail: [email],
+    const filterEmails = this.getEmailFilterValues(email);
+
+    return Promise.all([
+      this.client.send(
+        new SetSubscriptionAttributesCommand({
+          SubscriptionArn: subscriptionArn,
+          AttributeName: 'FilterPolicyScope',
+          AttributeValue: 'MessageAttributes',
         }),
-      }),
+      ),
+      this.client.send(
+        new SetSubscriptionAttributesCommand({
+          SubscriptionArn: subscriptionArn,
+          AttributeName: 'FilterPolicy',
+          AttributeValue: JSON.stringify({
+            assigneeEmail: filterEmails,
+          }),
+        }),
+      ),
+    ]);
+  }
+
+  async setEmailEndpointFilterPolicies(topicArn: string) {
+    let nextToken: string | undefined;
+    let updatedCount = 0;
+
+    do {
+      const result = await this.client.send(
+        new ListSubscriptionsByTopicCommand({
+          TopicArn: topicArn,
+          NextToken: nextToken,
+        }),
+      );
+
+      for (const subscription of result.Subscriptions || []) {
+        const endpoint = subscription.Endpoint?.trim();
+        const subscriptionArn = subscription.SubscriptionArn;
+
+        if (
+          subscription.Protocol !== 'email' ||
+          !endpoint ||
+          !subscriptionArn ||
+          subscriptionArn === 'PendingConfirmation' ||
+          subscriptionArn === 'pending confirmation'
+        ) {
+          continue;
+        }
+
+        await this.setEmailFilterPolicy(subscriptionArn, endpoint);
+        updatedCount += 1;
+      }
+
+      nextToken = result.NextToken;
+    } while (nextToken);
+
+    return { updatedCount };
+  }
+
+  private getEmailFilterValues(email: string) {
+    return [...new Set([email.trim(), email.trim().toLowerCase()])].filter(
+      Boolean,
     );
   }
 }
