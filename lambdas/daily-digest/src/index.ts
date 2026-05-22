@@ -4,8 +4,10 @@ import {
   ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 import {
+  ListSubscriptionsByTopicCommand,
   PublishCommand,
   SNSClient,
+  SetSubscriptionAttributesCommand,
 } from '@aws-sdk/client-sns';
 
 type EventBridgeScheduledEvent = {
@@ -72,6 +74,10 @@ export const handler = async (event: EventBridgeScheduledEvent) => {
     taskCount: dueTasks.length,
     recipientCount: recipients.length,
   });
+
+  if (recipients.length > 0) {
+    await ensureTopicEmailFilters(digestTopicArn);
+  }
 
   for (const recipient of recipients) {
     await publishDigest(recipient, dueDate);
@@ -177,6 +183,72 @@ async function publishDigest(recipient: DigestRecipient, dueDate: string) {
     taskCount: recipient.tasks.length,
     dueDate,
   });
+}
+
+async function ensureTopicEmailFilters(topicArn: string | undefined) {
+  if (!topicArn) {
+    throw new Error('SNS_DAILY_DIGEST_TOPIC_ARN is not configured');
+  }
+
+  let nextToken: string | undefined;
+  let updatedCount = 0;
+
+  do {
+    const result = await sns.send(
+      new ListSubscriptionsByTopicCommand({
+        TopicArn: topicArn,
+        NextToken: nextToken,
+      }),
+    );
+
+    for (const subscription of result.Subscriptions || []) {
+      const endpoint = subscription.Endpoint?.trim();
+      const subscriptionArn = subscription.SubscriptionArn;
+
+      if (
+        subscription.Protocol !== 'email' ||
+        !endpoint ||
+        !subscriptionArn ||
+        subscriptionArn === 'PendingConfirmation' ||
+        subscriptionArn === 'pending confirmation'
+      ) {
+        continue;
+      }
+
+      await Promise.all([
+        sns.send(
+          new SetSubscriptionAttributesCommand({
+            SubscriptionArn: subscriptionArn,
+            AttributeName: 'FilterPolicyScope',
+            AttributeValue: 'MessageAttributes',
+          }),
+        ),
+        sns.send(
+          new SetSubscriptionAttributesCommand({
+            SubscriptionArn: subscriptionArn,
+            AttributeName: 'FilterPolicy',
+            AttributeValue: JSON.stringify({
+              assigneeEmail: getEmailFilterValues(endpoint),
+            }),
+          }),
+        ),
+      ]);
+      updatedCount += 1;
+    }
+
+    nextToken = result.NextToken;
+  } while (nextToken);
+
+  console.log('Ensured daily digest SNS email filters', {
+    topicArn,
+    updatedCount,
+  });
+}
+
+function getEmailFilterValues(email: string) {
+  return [...new Set([email.trim(), email.trim().toLowerCase()])].filter(
+    Boolean,
+  );
 }
 
 function buildDigestEmail(recipient: DigestRecipient, dueDate: string) {
