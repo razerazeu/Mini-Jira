@@ -50,7 +50,6 @@ export default function SignupPage() {
           Create an account!
         </p>
         
-        {/* Error Message */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm">
             {error}

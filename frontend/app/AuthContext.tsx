@@ -7,15 +7,16 @@ interface User {
   email: string;
   name: string;
   role: string;
-  teamId: string;
+  teamId: string | null;  // ← Allow null
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isManager: boolean;
+  isEmployee: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (data: any) => Promise<void>;
+  signup: (data: any) => Promise<any>;
   logout: () => void;
   loading: boolean;
 }
@@ -28,22 +29,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user was logged in (from localStorage)
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Failed to parse stored user:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
     setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/signin`;
-    console.debug('[AuthContext] login url', url);
-    console.debug('[AuthContext] login payload', { email, password: password ? '***' : '' });
-
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,38 +55,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (!response.ok) {
-      let errorMessage = 'Login failed';
-      try {
-        const error = await response.json();
-        errorMessage = error.message || errorMessage;
-      } catch (err) {
-        console.warn('[AuthContext] login error parsing response', err);
-        errorMessage = `Login failed: ${response.status} ${response.statusText}`;
-      }
-      console.error('[AuthContext] login failed', {
-        status: response.status,
-        statusText: response.statusText,
-        url,
-      });
-      throw new Error(errorMessage);
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
     }
 
     const data = await response.json();
     
-    // Store token and user info
-    localStorage.setItem('token', data.accessToken);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    let role = 'EMPLOYEE';
+    let name = email.split('@')[0];
+    let userId = email;
     
-    setToken(data.accessToken);
-    setUser(data.user);
+    if (data.idToken) {
+      try {
+        const tokenParts = data.idToken.split('.');
+        const payload = JSON.parse(atob(tokenParts[1]));
+        console.log('Decoded token payload:', payload);
+        
+        role = payload['custom:role'] || 'EMPLOYEE';
+        name = payload.name || email.split('@')[0];
+        userId = payload.sub || email;
+      } catch (e) {
+        console.error('Failed to decode token:', e);
+      }
+    }
+    
+    const userData: User = {
+      id: userId,
+      email: email,
+      name: name,
+      role: role,
+      teamId: null,
+    };
+    
+    console.log('User data being stored:', userData);
+    
+    const tokenData = data.accessToken || data.idToken;
+    
+    localStorage.setItem('token', tokenData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    setToken(tokenData);
+    setUser(userData);
   };
 
   const signup = async (userData: any) => {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`;
-    console.debug('[AuthContext] signup url', url);
-    console.debug('[AuthContext] signup payload', userData);
-    console.debug('[AuthContext] env NEXT_PUBLIC_API_URL', process.env.NEXT_PUBLIC_API_URL);
-
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -90,25 +108,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (!response.ok) {
-      let errorMessage = 'Signup failed';
-      try {
-        const error = await response.json();
-        errorMessage = error.message || errorMessage;
-      } catch (err) {
-        console.warn('[AuthContext] signup error parsing response', err);
-        errorMessage = `Signup failed: ${response.status} ${response.statusText}`;
-      }
-      console.error('[AuthContext] signup failed', {
-        status: response.status,
-        statusText: response.statusText,
-        url,
-      });
-      throw new Error(errorMessage);
+      const error = await response.json();
+      throw new Error(error.message || 'Signup failed');
     }
 
     const data = await response.json();
-    console.debug('[AuthContext] signup response', data);
-
     return data;
   };
 
@@ -119,10 +123,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  const isManager = user?.role === 'Manager';
+  const isManager = user?.role === 'MANAGER';
+  const isEmployee = user?.role === 'EMPLOYEE';
 
   return (
-    <AuthContext.Provider value={{ user, token, isManager, login, signup, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, isManager, isEmployee, login, signup, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

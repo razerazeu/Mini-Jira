@@ -1,20 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
 @import "tailwindcss";
 
-/* Dark theme variables */
 :root {
   --background: #0a0a0a;
-  --surface: #1a1a1a;
-  --surface-light: #2a2a2a;
+  --surface: #111111;
+  --surface-light: #1a1a1a;
   --primary: #3b82f6;
   --primary-hover: #2563eb;
-  --text-primary: #ffffff;
-  --text-secondary: #a3a3a3;
-  --border: #2a2a2a;
+  --text-primary: #ededed;
+  --text-secondary: #a1a1aa;
+  --border: #27272a;
   --error: #ef4444;
   --success: #22c55e;
 }
 
-/* Apply dark theme to everything */
 * {
   box-sizing: border-box;
 }
@@ -26,67 +25,32 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Custom scrollbar for dark theme */
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
   background: var(--surface);
-  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--surface-light);
-  border-radius: 4px;
+  background: #3f3f46;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a3a;
+  background: #52525b;
 }
 
-/* Selection color */
+/* Selection */
 ::selection {
   background: var(--primary);
   color: white;
-}
-
-/* Focus ring for accessibility */
-:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-/* Link styles */
-a {
-  color: var(--primary);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-a:hover {
-  color: var(--primary-hover);
-}
-
-/* Button reset */
-button {
-  cursor: pointer;
-}
-
-/* Utility classes for dark theme (optional, can be used in components) */
-.bg-surface {
-  background-color: var(--surface);
-}
-
-.bg-surface-light {
-  background-color: var(--surface-light);
-}
-
-.text-secondary {
-  color: var(--text-secondary);
-}
-
-.border-dark {
-  border-color: var(--border);
 }
