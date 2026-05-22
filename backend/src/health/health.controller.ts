@@ -1,0 +1,15 @@
+import { Controller, Get } from '@nestjs/common';
+import { Public } from '../auth/public.decorator';
+
+@Controller('health')
+export class HealthController {
+  @Public()
+  @Get()
+  check() {
+    return {
+      status: 'ok',
+      service: 'mini-jira-backend',
+      timestamp: new Date().toISOString(),
+    };
+  }
+}

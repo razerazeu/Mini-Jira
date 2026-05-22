@@ -9,6 +9,7 @@ import { ProjectModule } from './project/project.module';
 import { CommentModule } from './comment/comment.module';
 import { TeamModule } from './team/team.module';
 import { UserModule } from './user/user.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { UserModule } from './user/user.module';
     }),
     AwsModule,
     AuthModule,
+    HealthModule,
     TeamModule,
     UserModule,
     TasksModule,

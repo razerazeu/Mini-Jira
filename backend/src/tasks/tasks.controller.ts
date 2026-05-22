@@ -82,6 +82,7 @@ export class TasksController {
   }
 
   @Post(':id/image')
+  @UseGuards(RoleGuard)
   @UseInterceptors(FileInterceptor('file'))
   uploadImage(
     @Param('id') id: string,
@@ -92,6 +93,7 @@ export class TasksController {
   }
 
   @Put(':id/image')
+  @UseGuards(RoleGuard)
   @UseInterceptors(FileInterceptor('file'))
   replaceImage(
     @Param('id') id: string,
@@ -102,6 +104,7 @@ export class TasksController {
   }
 
   @Delete(':id/image')
+  @UseGuards(RoleGuard)
   removeImage(
     @Param('id') id: string,
     @Req() req: any,
