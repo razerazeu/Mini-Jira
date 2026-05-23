@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/AuthContext';
+import { API_BASE } from '@/lib/apiBase';
 
 interface Task {
   id: string;
@@ -75,7 +76,7 @@ export default function TaskDetailPage() {
 
   const fetchTask = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}`, {
+      const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -99,7 +100,7 @@ export default function TaskDetailPage() {
 
   const fetchAuditLog = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/activities`, {
+      const response = await fetch(`${API_BASE}/tasks/${taskId}/activities`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.ok) {
@@ -113,7 +114,7 @@ export default function TaskDetailPage() {
 
   const fetchComments = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/comments`, {
+      const response = await fetch(`${API_BASE}/tasks/${taskId}/comments`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -132,7 +133,7 @@ export default function TaskDetailPage() {
     
     setSubmitting(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/comments`, {
+      const response = await fetch(`${API_BASE}/tasks/${taskId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -155,7 +156,7 @@ export default function TaskDetailPage() {
 
   const handleUpdateStatus = async (newStatus: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/status`, {
+      const response = await fetch(`${API_BASE}/tasks/${taskId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

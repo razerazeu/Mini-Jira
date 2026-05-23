@@ -85,6 +85,7 @@ describe('Tasks API behaviors', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api');
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
     );
@@ -97,7 +98,7 @@ describe('Tasks API behaviors', () => {
 
   it('validates DTO on create (400)', async () => {
     await request(app.getHttpServer())
-      .post('/tasks')
+      .post('/api/tasks')
       .set(managerAuth)
       .send({ projectId: 'p1', priority: 'MEDIUM', deadline: new Date().toISOString(), assigneeId: 'u1', teamId: 'team-A' })
       .expect(400);
@@ -105,7 +106,7 @@ describe('Tasks API behaviors', () => {
 
   it('rejects task deadlines before today on create (400)', async () => {
     await request(app.getHttpServer())
-      .post('/tasks')
+      .post('/api/tasks')
       .set(managerAuth)
       .send({
         projectId: 'p1',
@@ -120,7 +121,7 @@ describe('Tasks API behaviors', () => {
 
   it('create, update, status, delete, and forbidden team access', async () => {
     const teamRes = await request(app.getHttpServer())
-      .post('/teams')
+      .post('/api/teams')
       .set(managerAuth)
       .send({ name: 'Team A' })
       .expect(201);
@@ -128,13 +129,13 @@ describe('Tasks API behaviors', () => {
     createdTeamId = teamId;
 
     await request(app.getHttpServer())
-      .post('/teams')
+      .post('/api/teams')
       .set(managerAuth)
       .send({ name: 'team a' })
       .expect(400);
 
     await request(app.getHttpServer())
-      .patch('/users/u1/team')
+      .patch('/api/users/u1/team')
       .set(managerAuth)
       .send({ teamId })
       .expect(200)
@@ -144,7 +145,7 @@ describe('Tasks API behaviors', () => {
 
     // create project
     const p = await request(app.getHttpServer())
-      .post('/projects')
+      .post('/api/projects')
       .set(managerAuth)
       .send({ name: 'tproj', description: 'x' })
       .expect(201);
@@ -153,7 +154,7 @@ describe('Tasks API behaviors', () => {
 
     // create task as manager team-A (default)
     const tRes = await request(app.getHttpServer())
-      .post('/tasks')
+      .post('/api/tasks')
       .set(managerAuth)
       .send({
         projectId: project.id,
@@ -169,14 +170,14 @@ describe('Tasks API behaviors', () => {
     const task = tRes.body;
 
     await request(app.getHttpServer())
-      .put(`/tasks/${task.id}`)
+      .put(`/api/tasks/${task.id}`)
       .set(managerAuth)
       .send({ deadline: dateOnly(-1) })
       .expect(400);
 
     // update as same team manager
     await request(app.getHttpServer())
-      .put(`/tasks/${task.id}`)
+      .put(`/api/tasks/${task.id}`)
       .set(managerAuth)
       .send({ title: 'task A updated' })
       .expect(200)
@@ -186,7 +187,7 @@ describe('Tasks API behaviors', () => {
 
     // status update as same team
     await request(app.getHttpServer())
-      .patch(`/tasks/${task.id}/status`)
+      .patch(`/api/tasks/${task.id}/status`)
       .set(managerAuth)
       .send({ status: 'IN_PROGRESS' })
       .expect(200)
@@ -196,25 +197,25 @@ describe('Tasks API behaviors', () => {
 
     // attempt actions as a user from another team -> expect 403
     await request(app.getHttpServer())
-      .put(`/tasks/${task.id}`)
+      .put(`/api/tasks/${task.id}`)
       .set(otherAuth)
       .send({ title: 'bad update' })
       .expect(403);
 
     await request(app.getHttpServer())
-      .patch(`/tasks/${task.id}/status`)
+      .patch(`/api/tasks/${task.id}/status`)
       .set(otherAuth)
       .send({ status: 'DONE' })
       .expect(403);
 
     await request(app.getHttpServer())
-      .delete(`/tasks/${task.id}`)
+      .delete(`/api/tasks/${task.id}`)
       .set(otherAuth)
       .expect(403);
 
     // delete as original manager
     await request(app.getHttpServer())
-      .delete(`/tasks/${task.id}`)
+      .delete(`/api/tasks/${task.id}`)
       .set(managerAuth)
       .expect(200)
       .expect((res) => {
@@ -228,3 +229,4 @@ function dateOnly(dayOffset: number) {
   date.setUTCDate(date.getUTCDate() + dayOffset);
   return date.toISOString().slice(0, 10);
 }
+

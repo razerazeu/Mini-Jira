@@ -47,7 +47,7 @@ A modern task management system with team collaboration, project organization, a
 
 ### Prerequisites
 - Node.js 18+ and npm/yarn
-- Backend API running at `http://localhost:3000/api` (or configure `NEXT_PUBLIC_API_URL`)
+- Backend API running at `http://localhost:5000/api` (or configure `NEXT_PUBLIC_API_URL`)
 
 ### Installation
 
@@ -62,7 +62,7 @@ Create a `.env.local` file:
 
 ```env
 # API Configuration
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
 
 # AWS Amplify (optional, for authentication)
 NEXT_PUBLIC_AWS_REGION=us-east-1
@@ -330,7 +330,7 @@ npm run test
 
 ### API Connection Issues
 
-1. Verify backend is running: `curl http://localhost:3000/api/health`
+1. Verify backend is running: `curl http://localhost:5000/api/health`
 2. Check `NEXT_PUBLIC_API_URL` environment variable
 3. Look for CORS errors in browser console
 

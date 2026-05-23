@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE } from '@/lib/apiBase';
 
 interface User {
   id: string;
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/signin`;
+    const url = `${API_BASE}/auth/signin`;
     
     const response = await fetch(url, {
       method: 'POST',
@@ -104,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (userData: any) => {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`;
+    const url = `${API_BASE}/auth/signup`;
     
     const response = await fetch(url, {
       method: 'POST',

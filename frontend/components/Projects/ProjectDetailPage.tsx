@@ -12,8 +12,6 @@ import { useProjects } from '@/lib/hooks/useProjects';
 import { KanbanBoard } from '@/components/Kanban';
 import { TaskDetailModal } from '@/components/TaskDetail';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-
 interface ProjectDetailPageProps {
   projectId: string;
 }
