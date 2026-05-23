@@ -1,1 +1,0 @@
-we'll put the architecture, video, and live link here

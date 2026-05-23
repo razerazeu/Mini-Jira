@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useProjects, Project } from '@/lib/hooks/useProjects';
+import { useTeams } from '@/lib/hooks/useTeams';
 import { ProjectCard } from './ProjectCard';
 import { ProjectFormModal } from './ProjectFormModal';
 import { DeleteProjectModal } from './DeleteProjectModal';
@@ -14,6 +15,7 @@ export function ProjectsPage() {
   const router = useRouter();
   const { projects, loading, error, createProject, updateProject, deleteProject } =
     useProjects();
+  const { teams } = useTeams();
   const { user, isManager } = useAuth();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -169,6 +171,7 @@ export function ProjectsPage() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateProject}
+        teams={teams}
         title="Create New Project"
         submitButtonText="Create"
       />
@@ -178,6 +181,7 @@ export function ProjectsPage() {
           isOpen={true}
           onClose={() => setEditingProject(null)}
           onSubmit={handleEditProject}
+          teams={teams}
           initialData={editingProject}
           title="Edit Project"
           submitButtonText="Update"
