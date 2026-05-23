@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../AuthContext';
 import { AccessDenied } from '@/components/AccessDenied';
+import { API_BASE } from '@/lib/apiBase';
 
 interface Team {
   id: string;
@@ -97,7 +98,7 @@ export default function CreateTaskPage() {
 
   const fetchTeams = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teams`, {
+      const response = await fetch(`${API_BASE}/teams`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -119,7 +120,7 @@ export default function CreateTaskPage() {
   const fetchAllUsers = async () => {
     setLoadingUsers(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
+      const response = await fetch(`${API_BASE}/users`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -147,7 +148,7 @@ export default function CreateTaskPage() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/projects`, {
+      const response = await fetch(`${API_BASE}/projects`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -199,7 +200,7 @@ export default function CreateTaskPage() {
         formData.append('file', imageFile);
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks`, {
+      const response = await fetch(`${API_BASE}/tasks`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

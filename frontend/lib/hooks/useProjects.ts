@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '../apiClient';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-
 export interface Project {
   projectId: string;
   name: string;

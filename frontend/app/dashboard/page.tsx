@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../AuthContext';
+import { API_BASE } from '@/lib/apiBase';
 
 interface Task {
   id: string;
@@ -91,7 +92,7 @@ export default function DashboardPage() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      let url = `${process.env.NEXT_PUBLIC_API_URL}/tasks`;
+      let url = `${API_BASE}/tasks`;
       
       if (isManager && selectedTeam && selectedTeam !== 'all') {
         url += `?teamId=${selectedTeam}`;
@@ -124,7 +125,7 @@ export default function DashboardPage() {
 
   const fetchTeams = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teams`, {
+      const response = await fetch(`${API_BASE}/teams`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -139,7 +140,7 @@ export default function DashboardPage() {
 
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}/status`, {
+      const response = await fetch(`${API_BASE}/tasks/${taskId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/AuthContext';
 import { Button } from '@/components/ui/button';
+import { API_BASE } from '@/lib/apiBase';
 
 export function DashboardPage() {
   const { user, isManager, loading: authLoading } = useAuth();
@@ -20,8 +21,8 @@ export function DashboardPage() {
         setError(null);
 
         const [tasksRes, projectsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/projects`),
+          fetch(`${API_BASE}/tasks`),
+          fetch(`${API_BASE}/projects`),
         ]);
 
         if (!tasksRes.ok) throw new Error('Failed to fetch tasks');

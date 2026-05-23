@@ -28,12 +28,13 @@ describe('AppController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api');
     await app.init();
   });
 
-  it('/ (GET)', async () => {
+  it('/api (GET)', async () => {
     await request(app.getHttpServer())
-      .get('/')
+      .get('/api')
       .set(authHeader)
       .expect(200)
       .expect('Hello World!');

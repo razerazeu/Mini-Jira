@@ -59,6 +59,7 @@ describe('API smoke tests', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api');
     await app.init();
   });
 
@@ -68,7 +69,7 @@ describe('API smoke tests', () => {
 
   it('creates project -> creates task -> comments -> image lifecycle', async () => {
     const teamRes = await request(app.getHttpServer())
-      .post('/teams')
+      .post('/api/teams')
       .set(authHeader)
       .send({ name: 'Team 1' })
       .expect(201);
@@ -77,7 +78,7 @@ describe('API smoke tests', () => {
 
     // create project
     const projectRes = await request(app.getHttpServer())
-      .post('/projects')
+      .post('/api/projects')
       .set(authHeader)
       .send({ name: 'smoke project', description: 'for smoke' })
       .expect(201);
@@ -86,7 +87,7 @@ describe('API smoke tests', () => {
 
     // create task
     const taskRes = await request(app.getHttpServer())
-      .post('/tasks')
+      .post('/api/tasks')
       .set(authHeader)
       .send({
         projectId: project.id,
@@ -103,14 +104,14 @@ describe('API smoke tests', () => {
 
     // add comment
     const commentRes = await request(app.getHttpServer())
-      .post(`/tasks/${task.id}/comments`)
+      .post(`/api/tasks/${task.id}/comments`)
       .set(authHeader)
       .send({ text: 'nice' })
       .expect(201);
 
     // list comments
     await request(app.getHttpServer())
-      .get(`/tasks/${task.id}/comments`)
+      .get(`/api/tasks/${task.id}/comments`)
       .set(authHeader)
       .expect(200)
       .expect((res) => {
@@ -119,21 +120,21 @@ describe('API smoke tests', () => {
 
     // upload image (mocked S3)
     await request(app.getHttpServer())
-      .post(`/tasks/${task.id}/image`)
+      .post(`/api/tasks/${task.id}/image`)
       .set(authHeader)
       .attach('file', Buffer.from('abc'), 'a.txt')
       .expect(201);
 
     // replace image
     await request(app.getHttpServer())
-      .put(`/tasks/${task.id}/image`)
+      .put(`/api/tasks/${task.id}/image`)
       .set(authHeader)
       .attach('file', Buffer.from('def'), 'b.txt')
       .expect(200);
 
     // delete image
     await request(app.getHttpServer())
-      .delete(`/tasks/${task.id}/image`)
+      .delete(`/api/tasks/${task.id}/image`)
       .set(authHeader)
       .expect(200);
   }, 20000);
