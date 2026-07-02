@@ -12,7 +12,7 @@ https://d1b49icyii2w9p.cloudfront.net/
 
 ## Demo Video
 
-<video src="./video/project_video.mp4" controls width="100%"></video>
+https://github.com/user-attachments/assets/7e49e44d-6221-4e80-b2c9-6f7135523897
 
 ## Architecture
 
