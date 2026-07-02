@@ -19,10 +19,12 @@ interface User {
   name: string;
   email: string;
   teamId?: string;
+  role?: string;
 }
 
 interface Project {
   id: string;
+  projectId?: string;
   name: string;
   teamId?: string;
   description?: string;
@@ -79,20 +81,29 @@ export default function CreateTaskPage() {
     if (token && isManager) {
       fetchTeams();
       fetchProjects();
-      fetchAllUsers();
     }
   }, [token, isManager]);
+
+  useEffect(() => {
+    if (token && isManager && teamId) {
+      fetchTeamUsers(teamId);
+    } else {
+      setUsers([]);
+      setAssigneeId('');
+    }
+  }, [token, isManager, teamId]);
 
   // Filter projects when team changes
   useEffect(() => {
     if (teamId) {
-      const filtered = projects.filter(p => p.teamId === teamId || !p.teamId);
+      const filtered = projects.filter(p => p.teamId == null || p.teamId === teamId);
       setFilteredProjects(filtered);
-      if (projectId && !filtered.find(p => p.id === projectId)) {
+      if (projectId && !filtered.find(p => getProjectId(p) === projectId)) {
         setProjectId('');
       }
     } else {
-      setFilteredProjects(projects);
+      setFilteredProjects([]);
+      setProjectId('');
     }
   }, [teamId, projects, projectId]);
 
@@ -117,10 +128,11 @@ export default function CreateTaskPage() {
     }
   };
 
-  const fetchAllUsers = async () => {
+  const fetchTeamUsers = async (selectedTeamId: string) => {
     setLoadingUsers(true);
+    setAssigneeId('');
     try {
-      const response = await fetch(`${API_BASE}/users`, {
+      const response = await fetch(`${API_BASE}/users?teamId=${encodeURIComponent(selectedTeamId)}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -133,7 +145,11 @@ export default function CreateTaskPage() {
           name: userData.name,
           email: userData.email,
           teamId: userData.teamId,
-        }));
+          role: userData.role,
+        })).filter((userData: User) => (
+          userData.teamId === selectedTeamId &&
+          (!userData.role || userData.role.toUpperCase() === 'EMPLOYEE')
+        ));
         setUsers(mappedUsers);
         console.log('Users loaded:', mappedUsers);
       } else {
@@ -226,6 +242,7 @@ export default function CreateTaskPage() {
 
   // Helper to get team display ID
   const getTeamId = (team: Team) => team.id || team.teamId;
+  const getProjectId = (project: Project) => project.id || project.projectId || '';
 
   if (authLoading) {
     return (
@@ -352,25 +369,21 @@ export default function CreateTaskPage() {
               value={assigneeId}
               onChange={(e) => setAssigneeId(e.target.value)}
               required
-              disabled={loadingUsers}
+              disabled={!teamId || loadingUsers}
               className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             >
               <option value="">Select a user</option>
               {users.map((userItem) => (
                 <option key={userItem.id} value={userItem.id}>
                   {userItem.name} ({userItem.email})
-                  {userItem.teamId && teamId && userItem.teamId !== teamId && ' ⚠️ Different team'}
                 </option>
               ))}
             </select>
-            {!loadingUsers && users.length === 0 && (
-              <p className="text-sm text-yellow-500 mt-1">No users found. Create users first.</p>
+            {!teamId && (
+              <p className="text-sm text-gray-500 mt-1">Select a team first to see assignable users.</p>
             )}
-            {assigneeId && users.find(u => u.id === assigneeId)?.teamId && 
-             users.find(u => u.id === assigneeId)?.teamId !== teamId && (
-              <p className="text-sm text-yellow-500 mt-1">
-                ⚠️ Warning: This user belongs to a different team. The task may not appear in their dashboard.
-              </p>
+            {teamId && !loadingUsers && users.length === 0 && (
+              <p className="text-sm text-yellow-500 mt-1">No users found in this team.</p>
             )}
           </div>
 
@@ -388,9 +401,8 @@ export default function CreateTaskPage() {
             >
               <option value="">Select a project</option>
               {filteredProjects.map((project) => (
-                <option key={project.id} value={project.id}>
+                <option key={getProjectId(project)} value={getProjectId(project)}>
                   {project.name}
-                  {project.teamId === teamId ? ' ✓' : project.teamId ? ' (Other team)' : ' (No team)'}
                 </option>
               ))}
             </select>

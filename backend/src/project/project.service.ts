@@ -72,7 +72,9 @@ export class ProjectService {
       throw new ForbiddenException('User does not belong to a team');
     }
 
-    return projects.filter((project) => project.teamId === user.teamId);
+    return projects.filter(
+      (project) => project.teamId == null || project.teamId === user.teamId,
+    );
   }
 
   async findOne(id: string, user?: any) {
@@ -98,7 +100,13 @@ export class ProjectService {
     updateProjectDto: UpdateProjectDto,
   ) {
     const project = await this.findOne(id);
-    const updates = this.definedOnly(updateProjectDto);
+    const updates: Omit<Partial<UpdateProjectDto>, 'teamId'> & {
+      teamId?: string | null;
+    } = this.definedOnly(updateProjectDto);
+
+    if ('teamId' in updates) {
+      updates.teamId = updates.teamId || null;
+    }
 
     await this.assertProjectTeamExists(updates.teamId);
 
@@ -144,7 +152,7 @@ export class ProjectService {
       id,
       projectId: id,
       ...createProjectDto,
-      teamId: createProjectDto.teamId ?? null,
+      teamId: createProjectDto.teamId || null,
       createdBy: user?.userId || user?.sub || user?.id || 'system',
       isActive: true,
       totalTasks: 0,
@@ -176,7 +184,9 @@ export class ProjectService {
       return true;
     }
 
-    return Boolean(user?.teamId && project.teamId === user.teamId);
+    return Boolean(
+      project.teamId == null || (user?.teamId && project.teamId === user.teamId),
+    );
   }
 
   private definedOnly<T extends Record<string, any>>(value: T): Partial<T> {

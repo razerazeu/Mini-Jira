@@ -51,7 +51,7 @@ interface AuditLog {
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { token, user, isManager } = useAuth();
+  const { token, user, isManager, loading: authLoading } = useAuth();
   const [task, setTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [auditLog, setAuditLog] = useState<AuditLog[]>([]);
@@ -63,6 +63,9 @@ export default function TaskDetailPage() {
   const taskId = params.taskId as string;
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
     if (!token) {
       router.push('/login');
       return;
@@ -72,7 +75,7 @@ export default function TaskDetailPage() {
       fetchComments();
       fetchAuditLog();
     }
-  }, [token, taskId]);
+  }, [token, taskId, authLoading]);
 
   const fetchTask = async () => {
     try {

@@ -2,6 +2,12 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { API_BASE } from '@/lib/apiBase';
+import {
+  clearAuthSession,
+  getStoredToken,
+  getStoredUser,
+  storeAuthSession,
+} from '@/lib/authStorage';
 
 interface User {
   id: string;
@@ -32,8 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const normalizeRole = (role?: string | null) => role?.toUpperCase() || null;
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    const storedToken = getStoredToken();
+    const storedUser = getStoredUser();
     
     if (storedToken && storedUser) {
       try {
@@ -43,8 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         // Invalid JSON in localStorage, clear it
         console.warn('[AuthContext] Failed to parse stored user', err);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        clearAuthSession();
       }
     }
     setLoading(false);
@@ -97,8 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const tokenData = data.accessToken || data.idToken;
     
-    localStorage.setItem('token', tokenData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    storeAuthSession(tokenData, userData, data.expiresIn);
     
     setToken(tokenData);
     setUser(userData);
@@ -123,8 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearAuthSession();
     setToken(null);
     setUser(null);
   };

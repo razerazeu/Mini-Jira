@@ -2,17 +2,23 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from './AuthContext';
 
 export default function HomePage() {
   const router = useRouter();
+  const { token, loading } = useAuth();
   
   useEffect(() => {
-    router.push('/login');
-  }, [router]);
+    if (loading) {
+      return;
+    }
+
+    router.push(token ? '/dashboard' : '/login');
+  }, [router, token, loading]);
   
   return (
     <div className="flex justify-center items-center h-screen">
-      <p>Redirecting to login...</p>
+      <p>Redirecting...</p>
     </div>
   );
 }

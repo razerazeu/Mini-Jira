@@ -7,8 +7,24 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  const configuredOrigins = (
+    process.env.CORS_ORIGINS ||
+    process.env.FRONTEND_ORIGIN ||
+    ''
+  )
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'https://d1b49icyii2w9p.cloudfront.net',
+    ...configuredOrigins,
+  ];
+
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'https://d1b49icyii2w9p.cloudfront.net/'],
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
