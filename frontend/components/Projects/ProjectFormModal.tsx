@@ -72,14 +72,14 @@ export function ProjectFormModal({
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0d0d0d] rounded-lg shadow-2xl max-w-md w-full border border-gray-800 text-white">
+      <div className="bg-white rounded-lg shadow-2xl max-w-md w-full border border-[#E4E7EB] text-[#172B4D]">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
-          <h2 className="text-xl font-semibold text-white">{title}</h2>
+        <div className="flex items-center justify-between p-6 border-b border-[#E4E7EB]">
+          <h2 className="text-xl font-semibold text-[#172B4D]">{title}</h2>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-gray-400 hover:text-white disabled:opacity-50 transition-colors"
+            className="text-[#6B778C] hover:text-[#172B4D] disabled:opacity-50 transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
@@ -89,14 +89,14 @@ export function ProjectFormModal({
         <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6 space-y-4">
           {/* Project Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-[#6B778C] mb-1.5">
               Project Name *
             </label>
             <input
               {...register('name')}
               type="text"
               placeholder="e.g., Website Redesign"
-              className="w-full px-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+              className="w-full px-4 py-2 bg-white border border-[#E4E7EB] rounded-lg text-[#172B4D] placeholder-[#6B778C] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent disabled:opacity-50"
               disabled={isSubmitting}
             />
             {errors.name && (
@@ -106,14 +106,14 @@ export function ProjectFormModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-[#6B778C] mb-1.5">
               Description
             </label>
             <textarea
               {...register('description')}
               placeholder="Optional project description..."
               rows={3}
-              className="w-full px-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:opacity-50"
+              className="w-full px-4 py-2 bg-white border border-[#E4E7EB] rounded-lg text-[#172B4D] placeholder-[#6B778C] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent resize-none disabled:opacity-50"
               disabled={isSubmitting}
             />
             {errors.description && (
@@ -124,12 +124,12 @@ export function ProjectFormModal({
           {/* Team Selection */}
           {teams.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              <label className="block text-sm font-medium text-[#6B778C] mb-1.5">
                 Team
               </label>
               <select
                 {...register('teamId')}
-                className="w-full px-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                className="w-full px-4 py-2 bg-white border border-[#E4E7EB] rounded-lg text-[#172B4D] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent disabled:opacity-50"
                 disabled={isSubmitting}
               >
                 <option value="">No team (available to all)</option>
@@ -143,19 +143,19 @@ export function ProjectFormModal({
           )}
 
           {/* Buttons */}
-          <div className="flex gap-3 pt-4 border-t border-gray-800">
+          <div className="flex gap-3 pt-4 border-t border-[#E4E7EB]">
             <button
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2 text-gray-200 bg-[#1a1a1a] border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 font-medium"
+              className="flex-1 px-4 py-2 text-[#172B4D] bg-white border border-[#E4E7EB] rounded-lg hover:bg-[#F4F5F7] transition-colors disabled:opacity-50 font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors font-medium"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#0052CC] hover:bg-[#0747A6] disabled:bg-gray-400 text-white rounded-lg transition-colors font-medium"
             >
               {isSubmitting ? (
                 <>

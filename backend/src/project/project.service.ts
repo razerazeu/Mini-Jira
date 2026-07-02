@@ -59,6 +59,22 @@ export class ProjectService {
     return project;
   }
 
+  async adjustCompletedTaskCount(projectId: string, delta: number) {
+    const project = await this.findOne(projectId);
+
+    project.completedTasks = Math.max(0, (project.completedTasks || 0) + delta);
+    project.updatedAt = new Date().toISOString();
+
+    if (this.useDynamo) {
+      await this.dynamo.put({
+        TableName: this.tableName,
+        Item: project,
+      });
+    }
+
+    return project;
+  }
+
   async findAll(user?: any) {
     const projects = this.useDynamo
       ? ((await this.dynamo.scan({ TableName: this.tableName })).Items || [])

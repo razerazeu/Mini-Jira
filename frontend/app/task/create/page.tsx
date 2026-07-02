@@ -246,8 +246,8 @@ export default function CreateTaskPage() {
 
   if (authLoading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center items-center h-screen bg-[#F7F8FA]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0052CC]"></div>
       </div>
     );
   }
@@ -262,13 +262,13 @@ export default function CreateTaskPage() {
 
   return (
     <main className="overflow-auto">
-      <header className="h-14 bg-[#0d0d0d] border-b border-gray-800 flex items-center px-6">
-        <h1 className="text-white font-medium">Create New Task</h1>
+      <header className="h-14 bg-white border-b border-[#E4E7EB] flex items-center px-6">
+        <h1 className="text-[#172B4D] font-medium">Create New Task</h1>
       </header>
 
       <div className="p-6 max-w-2xl mx-auto">
-        <form onSubmit={handleSubmit} className="bg-[#0d0d0d] rounded-md border border-gray-800 p-6 space-y-5">
-          
+        <form onSubmit={handleSubmit} className="bg-white rounded-md border border-[#E4E7EB] p-6 space-y-5">
+
           {error && (
             <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-2 rounded-md text-sm">
               {error}
@@ -277,7 +277,7 @@ export default function CreateTaskPage() {
 
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Title <span className="text-red-400">*</span>
             </label>
             <input
@@ -286,13 +286,13 @@ export default function CreateTaskPage() {
               onChange={(e) => setTitle(e.target.value)}
               required
               placeholder="Enter task title"
-              className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-white placeholder-gray-500"
+              className="w-full px-3 py-2 bg-white border border-[#E4E7EB] rounded-md focus:ring-1 focus:ring-[#0052CC] focus:border-[#0052CC] outline-none text-[#172B4D] placeholder-[#6B778C]"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Description
             </label>
             <textarea
@@ -300,19 +300,19 @@ export default function CreateTaskPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="Describe the task..."
-              className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-white placeholder-gray-500 resize-none"
+              className="w-full px-3 py-2 bg-white border border-[#E4E7EB] rounded-md focus:ring-1 focus:ring-[#0052CC] focus:border-[#0052CC] outline-none text-[#172B4D] placeholder-[#6B778C] resize-none"
             />
           </div>
 
           {/* Priority */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Priority
             </label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
-              className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-white border border-[#E4E7EB] rounded-md text-[#172B4D] focus:ring-1 focus:ring-[#0052CC]"
             >
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
@@ -322,20 +322,20 @@ export default function CreateTaskPage() {
 
           {/* Deadline */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Deadline
             </label>
             <input
               type="date"
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
-              className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-white"
+              className="w-full px-3 py-2 bg-white border border-[#E4E7EB] rounded-md focus:ring-1 focus:ring-[#0052CC] focus:border-[#0052CC] outline-none text-[#172B4D]"
             />
           </div>
 
           {/* Team */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Team <span className="text-red-400">*</span>
             </label>
             <select
@@ -343,7 +343,7 @@ export default function CreateTaskPage() {
               onChange={(e) => setTeamId(e.target.value)}
               required
               disabled={loadingTeams}
-              className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full px-3 py-2 bg-white border border-[#E4E7EB] rounded-md text-[#172B4D] focus:ring-1 focus:ring-[#0052CC] disabled:opacity-50"
             >
               <option value="">Select a team</option>
               {teams.map((team) => {
@@ -356,13 +356,13 @@ export default function CreateTaskPage() {
               })}
             </select>
             {loadingTeams && (
-              <p className="text-sm text-gray-500 mt-1">Loading teams...</p>
+              <p className="text-sm text-[#6B778C] mt-1">Loading teams...</p>
             )}
           </div>
 
           {/* Assign To */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Assign To <span className="text-red-400">*</span>
             </label>
             <select
@@ -370,7 +370,7 @@ export default function CreateTaskPage() {
               onChange={(e) => setAssigneeId(e.target.value)}
               required
               disabled={!teamId || loadingUsers}
-              className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full px-3 py-2 bg-white border border-[#E4E7EB] rounded-md text-[#172B4D] focus:ring-1 focus:ring-[#0052CC] disabled:opacity-50"
             >
               <option value="">Select a user</option>
               {users.map((userItem) => (
@@ -380,7 +380,7 @@ export default function CreateTaskPage() {
               ))}
             </select>
             {!teamId && (
-              <p className="text-sm text-gray-500 mt-1">Select a team first to see assignable users.</p>
+              <p className="text-sm text-[#6B778C] mt-1">Select a team first to see assignable users.</p>
             )}
             {teamId && !loadingUsers && users.length === 0 && (
               <p className="text-sm text-yellow-500 mt-1">No users found in this team.</p>
@@ -389,7 +389,7 @@ export default function CreateTaskPage() {
 
           {/* Project */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Project <span className="text-red-400">*</span>
             </label>
             <select
@@ -397,7 +397,7 @@ export default function CreateTaskPage() {
               onChange={(e) => setProjectId(e.target.value)}
               required
               disabled={!teamId}
-              className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full px-3 py-2 bg-white border border-[#E4E7EB] rounded-md text-[#172B4D] focus:ring-1 focus:ring-[#0052CC] disabled:opacity-50"
             >
               <option value="">Select a project</option>
               {filteredProjects.map((project) => (
@@ -412,7 +412,7 @@ export default function CreateTaskPage() {
               </p>
             )}
             {!teamId && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-[#6B778C] mt-1">
                 Select a team first to see available projects.
               </p>
             )}
@@ -420,20 +420,20 @@ export default function CreateTaskPage() {
 
           {/* Task Image */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Task Image
             </label>
             <input
               type="file"
               accept="image/*"
               onChange={handleImageSelect}
-              className="w-full text-sm text-gray-200 file:rounded-md file:border-0 file:px-3 file:py-2 file:text-sm file:font-medium file:bg-gray-800 file:text-white"
+              className="w-full text-sm text-[#172B4D] file:rounded-md file:border-0 file:px-3 file:py-2 file:text-sm file:font-medium file:bg-[#F4F5F7] file:text-[#172B4D]"
             />
             {imagePreview && (
               <img
                 src={imagePreview}
                 alt="Preview"
-                className="mt-3 h-36 w-full rounded-md object-cover border border-gray-700"
+                className="mt-3 h-36 w-full rounded-md object-cover border border-[#E4E7EB]"
               />
             )}
           </div>
@@ -443,14 +443,14 @@ export default function CreateTaskPage() {
             <button
               type="submit"
               disabled={loading || !title || !teamId || !assigneeId || !projectId}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition disabled:opacity-50 font-medium"
+              className="flex-1 bg-[#0052CC] hover:bg-[#0747A6] text-white py-2 rounded-md transition disabled:opacity-50 font-medium"
             >
               {loading ? 'Creating...' : 'Create Task'}
             </button>
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-6 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-gray-300 hover:bg-gray-800 transition"
+              className="px-6 py-2 bg-white border border-[#E4E7EB] rounded-md text-[#6B778C] hover:bg-[#F4F5F7] transition"
             >
               Cancel
             </button>
