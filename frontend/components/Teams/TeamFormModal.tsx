@@ -68,14 +68,14 @@ export function TeamFormModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-neutral-900 rounded-lg shadow-2xl max-w-md w-full text-neutral-100">
+      <div className="bg-white rounded-lg shadow-2xl max-w-md w-full border border-[#E4E7EB] text-[#172B4D]">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-700">
-          <h2 className="text-xl font-semibold text-white">{title}</h2>
+        <div className="flex items-center justify-between p-6 border-b border-[#E4E7EB]">
+          <h2 className="text-xl font-semibold text-[#172B4D]">{title}</h2>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-neutral-300 hover:text-neutral-100 disabled:opacity-50"
+            className="text-[#6B778C] hover:text-[#172B4D] disabled:opacity-50"
           >
             <X className="w-6 h-6" />
           </button>
@@ -85,12 +85,12 @@ export function TeamFormModal({
         <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6 space-y-4">
           {/* Team Name */}
           <div>
-            <label className="block text-sm font-medium text-neutral-200 mb-1.5">Team Name *</label>
+            <label className="block text-sm font-medium text-[#6B778C] mb-1.5">Team Name *</label>
             <input
               {...register('name')}
               type="text"
               placeholder="e.g., Frontend Team"
-              className="w-full px-4 py-2 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-neutral-800 text-neutral-100 disabled:opacity-50"
+              className="w-full px-4 py-2 border border-[#E4E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent bg-white text-[#172B4D] disabled:opacity-50"
               disabled={isSubmitting}
             />
             {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
@@ -98,31 +98,31 @@ export function TeamFormModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-neutral-200 mb-1.5">Description (Optional)</label>
+            <label className="block text-sm font-medium text-[#6B778C] mb-1.5">Description (Optional)</label>
             <textarea
               {...register('description')}
               placeholder="e.g., Responsible for frontend development"
               rows={3}
-              className="w-full px-4 py-2 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none bg-neutral-800 text-neutral-100 disabled:opacity-50"
+              className="w-full px-4 py-2 border border-[#E4E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent resize-none bg-white text-[#172B4D] disabled:opacity-50"
               disabled={isSubmitting}
             />
             {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
           </div>
 
           {/* Footer */}
-          <div className="flex gap-3 pt-4 border-t border-neutral-700">
+          <div className="flex gap-3 pt-4 border-t border-[#E4E7EB]">
             <button
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2 text-neutral-100 bg-neutral-800 hover:bg-neutral-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2 text-[#172B4D] bg-white border border-[#E4E7EB] hover:bg-[#F4F5F7] rounded-lg font-medium transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-[#0052CC] hover:bg-[#0747A6] text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isSubmitting && <Loader className="w-4 h-4 animate-spin" />}
               {submitButtonText}

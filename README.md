@@ -178,6 +178,7 @@ COMMENTS_TASK_INDEX=
 ACTIVITY_LOG_TASK_INDEX=
 
 S3_ORIGINALS_BUCKET=
+S3_RESIZED_BUCKET=
 S3_BUCKET=
 
 SNS_TASK_ASSIGNMENT_TOPIC_ARN=
@@ -216,8 +217,21 @@ It should also forward:
 ```text
 Authorization
 Content-Type
+Cookie
 Query strings
 ```
+
+The backend deployment should set `FRONTEND_ORIGIN` or `CORS_ORIGINS` to the exact CloudFront origin, without a trailing slash:
+
+For task image uploads in deployment:
+
+- `S3_ORIGINALS_BUCKET` must point to the bucket the backend writes original task images to.
+- `S3_RESIZED_BUCKET` must point to the bucket the image resize Lambda writes thumbnails/resized images to.
+- The backend task role must allow `s3:PutObject`, `s3:GetObject`, and `s3:DeleteObject` on `arn:aws:s3:::<originals-bucket>/tasks/*`.
+- The backend task role must allow `s3:GetObject` on `arn:aws:s3:::<resized-bucket>/tasks/*` if resized images are displayed.
+- The image resize Lambda role must allow `s3:GetObject` on the originals bucket, `s3:PutObject` on the resized bucket, and `dynamodb:UpdateItem` on the tasks table.
+- The originals bucket must send object-created events for the `tasks/` prefix to the image resize Lambda.
+- If bucket versioning is enabled, include `s3:GetObjectVersion` for reads that use image version IDs.
 
 The ALB health check should target:
 

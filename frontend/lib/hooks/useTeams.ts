@@ -38,6 +38,11 @@ export const useTeams = () => {
     try {
       const response = await apiClient.get<Team[]>(`/teams`);
       setTeams(response.data);
+      await Promise.all(
+        response.data.map((team) =>
+          fetchTeamMembers(team.teamId || team.id || '').catch(() => {})
+        )
+      );
     } catch (err: any) {
       const status = err.response?.status;
       setError(

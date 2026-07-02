@@ -58,41 +58,41 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F7F8FA]">
       <div className="mx-auto max-w-7xl px-6 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome, {user.name}</h1>
-        <p className="text-sm text-gray-500 mb-8">
+        <h1 className="text-2xl font-bold text-[#172B4D] mb-2">Welcome, {user.name}</h1>
+        <p className="text-sm text-[#6B778C] mb-8">
           {isManager ? 'Manager Dashboard' : 'Employee Dashboard'}
         </p>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="bg-white p-6 rounded-xl shadow border border-gray-200">
-            <h2 className="text-sm font-medium text-gray-500">Total Tasks</h2>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{tasks.length}</p>
+          <div className="bg-white p-6 rounded-xl shadow border border-[#E4E7EB]">
+            <h2 className="text-sm font-medium text-[#6B778C]">Total Tasks</h2>
+            <p className="text-3xl font-bold text-[#172B4D] mt-2">{tasks.length}</p>
           </div>
-          <div className="bg-white p-6 rounded-xl shadow border border-gray-200">
-            <h2 className="text-sm font-medium text-gray-500">Total Projects</h2>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{projects.length}</p>
+          <div className="bg-white p-6 rounded-xl shadow border border-[#E4E7EB]">
+            <h2 className="text-sm font-medium text-[#6B778C]">Total Projects</h2>
+            <p className="text-3xl font-bold text-[#172B4D] mt-2">{projects.length}</p>
           </div>
-          <div className="bg-white p-6 rounded-xl shadow border border-gray-200">
-            <h2 className="text-sm font-medium text-gray-500">Role</h2>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{user.role}</p>
+          <div className="bg-white p-6 rounded-xl shadow border border-[#E4E7EB]">
+            <h2 className="text-sm font-medium text-[#6B778C]">Role</h2>
+            <p className="text-3xl font-bold text-[#172B4D] mt-2">{user.role}</p>
           </div>
         </div>
 
         <section className="mt-10">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Your Tasks</h2>
+            <h2 className="text-lg font-semibold text-[#172B4D]">Your Tasks</h2>
             {isManager && <Button>Create Task</Button>}
           </div>
           {tasks.length === 0 ? (
-            <p className="text-gray-500">No tasks yet.</p>
+            <p className="text-[#6B778C]">No tasks yet.</p>
           ) : (
             <div className="space-y-4">
               {(tasks as any[]).map((task) => (
-                <div key={task.id || task.taskId} className="bg-white p-4 rounded-lg border border-gray-200">
-                  <h3 className="font-medium text-gray-900">{task.title}</h3>
-                  <p className="text-sm text-gray-500">
+                <div key={task.id || task.taskId} className="bg-white p-4 rounded-lg border border-[#E4E7EB]">
+                  <h3 className="font-medium text-[#172B4D]">{task.title}</h3>
+                  <p className="text-sm text-[#6B778C]">
                     Status: {task.status || 'N/A'} • Priority: {task.priority || 'N/A'}
                   </p>
                 </div>

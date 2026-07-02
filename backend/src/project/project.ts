@@ -12,7 +12,7 @@ export interface Project {
 
   /**
    * Optional if a project belongs to a specific team.
-   * If null, manager can use it across teams.
+   * If null, the project is visible to all teams.
    */
   teamId?: string | null;
 

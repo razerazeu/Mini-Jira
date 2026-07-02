@@ -38,28 +38,28 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] py-12 px-4">
-      <div className="max-w-md w-full space-y-8 p-8 bg-[#1a1a1a] rounded-xl shadow-xl border border-[#2a2a2a]">
-        
+    <div className="min-h-screen flex items-center justify-center bg-[#F7F8FA] py-12 px-4">
+      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-xl border border-[#E4E7EB]">
+
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-white">Create Account</h2>
-          <p className="mt-2 text-gray-400">Join your team on Mini-Jira</p>
+          <h2 className="text-3xl font-bold text-[#172B4D]">Create Account</h2>
+          <p className="mt-2 text-[#6B778C]">Join your team on Mini-Jira</p>
         </div>
-        
-        <p className="text-sm text-gray-500 text-center">
+
+        <p className="text-sm text-[#6B778C] text-center">
           Create an account!
         </p>
-        
+
         {error && (
           <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm">
             {error}
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          
+
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Full Name
             </label>
             <input
@@ -68,12 +68,12 @@ export default function SignupPage() {
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               required
               placeholder="John Doe"
-              className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-white placeholder-gray-500"
+              className="w-full px-4 py-2 bg-white border border-[#E4E7EB] rounded-lg focus:ring-2 focus:ring-[#0052CC] focus:border-[#0052CC] outline-none transition text-[#172B4D] placeholder-[#6B778C]"
             />
           </div>
-          
+
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Email Address
             </label>
             <input
@@ -82,12 +82,12 @@ export default function SignupPage() {
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               required
               placeholder="you@example.com"
-              className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-white placeholder-gray-500"
+              className="w-full px-4 py-2 bg-white border border-[#E4E7EB] rounded-lg focus:ring-2 focus:ring-[#0052CC] focus:border-[#0052CC] outline-none transition text-[#172B4D] placeholder-[#6B778C]"
             />
           </div>
-          
+
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[#172B4D] mb-1">
               Password
             </label>
             <div className="relative">
@@ -97,28 +97,28 @@ export default function SignupPage() {
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 required
                 placeholder="Create a password"
-                className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-white placeholder-gray-500 pr-10"
+                className="w-full px-4 py-2 bg-white border border-[#E4E7EB] rounded-lg focus:ring-2 focus:ring-[#0052CC] focus:border-[#0052CC] outline-none transition text-[#172B4D] placeholder-[#6B778C] pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B778C] hover:text-[#172B4D]"
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-[#6B778C] mt-1">
               At least 8 characters (including uppercase, lowercase, and numbers)
             </p>
           </div>
-          
+
 
           <input type="hidden" name="role" value="EMPLOYEE" />
-          
+
           <button
             type="submit"
             disabled={loading || !formData.name || !formData.email || !formData.password}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed font-medium mt-6"
+            className="w-full bg-[#0052CC] hover:bg-[#0747A6] text-white py-2 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed font-medium mt-6"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -133,10 +133,10 @@ export default function SignupPage() {
             )}
           </button>
         </form>
-      
-        <p className="text-center text-sm text-gray-400">
+
+        <p className="text-center text-sm text-[#6B778C]">
           Already have an account?{' '}
-          <a href="/login" className="text-blue-500 hover:text-blue-400 font-medium">
+          <a href="/login" className="text-[#0052CC] hover:text-[#0747A6] font-medium">
             Sign in
           </a>
         </p>

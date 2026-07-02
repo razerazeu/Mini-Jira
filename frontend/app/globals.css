@@ -2,14 +2,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --surface: #111111;
-  --surface-light: #1a1a1a;
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  --text-primary: #ededed;
-  --text-secondary: #a1a1aa;
-  --border: #27272a;
+  --background: #F7F8FA;
+  --surface: #FFFFFF;
+  --surface-light: #FAFBFC;
+  --primary: #0052CC;
+  --primary-hover: #0747A6;
+  --text-primary: #172B4D;
+  --text-secondary: #6B778C;
+  --border: #E4E7EB;
   --error: #ef4444;
   --success: #22c55e;
 }
@@ -37,20 +37,36 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--surface);
+  background: #F1F2F4;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: #C1C7D0;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: #A5ADBA;
 }
 
 /* Selection */
 ::selection {
   background: var(--primary);
   color: white;
+}
+
+/* Kanban board animation (login page) */
+@keyframes kanban-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.kanban-card {
+  animation: kanban-card-in 0.4s ease-out both;
 }

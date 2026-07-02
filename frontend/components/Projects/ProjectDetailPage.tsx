@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Loader, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Loader, AlertCircle, Target } from 'lucide-react';
 import { Task, TaskStatus } from '@/lib/types';
 import toast from 'react-hot-toast';
 import { apiClient } from '@/lib/apiClient';
@@ -95,10 +95,10 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
 
   if (isLoading && !project) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F8FA] flex items-center justify-center">
         <div className="text-center space-y-4">
-          <Loader className="w-12 h-12 text-gray-400 animate-spin mx-auto" />
-          <p className="text-gray-400 font-medium">Loading project...</p>
+          <Loader className="w-10 h-10 text-[#0052CC] animate-spin mx-auto" />
+          <p className="text-[#6B778C] font-medium">Loading project...</p>
         </div>
       </div>
     );
@@ -106,20 +106,20 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
 
   if (error && tasks.length === 0) {
     return (
-      <div className="min-h-screen bg-black p-6 text-white">
+      <div className="min-h-screen bg-[#F7F8FA] p-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6 font-medium"
+          className="flex items-center gap-2 text-[#0052CC] hover:text-[#0747A6] mb-6 font-medium text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Projects
         </button>
-        <div className="max-w-2xl mx-auto bg-[#0d0d0d] rounded-lg shadow p-6 border border-red-900">
+        <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-sm p-6 border border-red-200">
           <div className="flex items-start gap-4">
             <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-1" />
             <div>
-              <h2 className="text-lg font-semibold text-white">Failed to Load Project</h2>
-              <p className="text-gray-400 mt-1">{error}</p>
+              <h2 className="text-lg font-semibold text-[#172B4D]">Failed to Load Project</h2>
+              <p className="text-[#6B778C] mt-1">{error}</p>
             </div>
           </div>
         </div>
@@ -127,67 +127,61 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
     );
   }
 
+  const totalTasks = tasks.length;
+  const doneCount = tasks.filter((t) => t.status === 'DONE').length;
+  const progressPct = totalTasks ? Math.round((doneCount / totalTasks) * 100) : 0;
+
   return (
     !canViewProject && project ? (
       <AccessDenied title="Access Denied" message="You don't have permission to view this project." />
     ) : (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F7F8FA]">
       {/* Header */}
-      <div className="bg-[#0d0d0d] border-b border-gray-800 shadow-sm sticky top-0 z-40">
-        <div className="max-w-full px-6 py-4">
+      <div className="bg-white border-b border-[#E4E7EB] sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-6 py-5">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-4 font-medium"
+            className="flex items-center gap-2 text-[#0052CC] hover:text-[#0747A6] mb-4 font-medium text-sm transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Projects
           </button>
 
-          <div>
-            <h1 className="text-3xl font-bold text-white">{project?.name || 'Project'}</h1>
-            {project?.description && (
-              <p className="text-gray-400 mt-2">{project.description}</p>
-            )}
-          </div>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-[#172B4D]">{project?.name || 'Project'}</h1>
+              {project?.description && (
+                <p className="text-[#6B778C] mt-1.5 max-w-2xl">{project.description}</p>
+              )}
+            </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-900">
-            {['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'].map((status) => {
-              const count = tasks.filter((t) => t.status === status).length;
-              const icons = {
-                TODO: '📝',
-                IN_PROGRESS: '⚡',
-                IN_REVIEW: '👀',
-                DONE: '✅',
-              };
-              return (
-                <div key={status} className="flex items-center gap-3">
-                  <span className="text-2xl">{icons[status as keyof typeof icons]}</span>
-                  <div>
-                    <p className="text-xs text-gray-400 uppercase font-semibold">
-                      {status.replace(/_/g, ' ')}
-                    </p>
-                    <p className="text-2xl font-bold text-white">{count}</p>
-                  </div>
+            {totalTasks > 0 && (
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="w-28 bg-[#E4E7EB] rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-[#0052CC] h-full rounded-full transition-all"
+                    style={{ width: `${progressPct}%` }}
+                  />
                 </div>
-              );
-            })}
+                <span className="text-sm font-medium text-[#172B4D]">{progressPct}% done</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1">
+      <div className="flex-1 max-w-6xl mx-auto w-full">
         {isLoading ? (
           <div className="flex items-center justify-center h-96">
-            <Loader className="w-8 h-8 text-gray-400 animate-spin" />
+            <Loader className="w-8 h-8 text-[#0052CC] animate-spin" />
           </div>
         ) : tasks.length === 0 ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-                <div className="text-5xl mb-4">🎯</div>
-                <p className="text-gray-400 font-medium">No tasks in this project yet</p>
-                <p className="text-sm text-gray-500 mt-1">Create or assign tasks to get started</p>
+                <Target className="w-12 h-12 text-[#0052CC] mx-auto mb-4" strokeWidth={1.5} />
+                <p className="text-[#172B4D] font-medium">No tasks in this project yet</p>
+                <p className="text-sm text-[#6B778C] mt-1">Create or assign tasks to get started</p>
               </div>
           </div>
         ) : (

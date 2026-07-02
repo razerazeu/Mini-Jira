@@ -243,6 +243,12 @@ export class TasksService {
     });
 
     if (previousStatus !== TaskStatus.DONE && dto.status === TaskStatus.DONE) {
+      await this.projectService.adjustCompletedTaskCount(task.projectId, 1);
+    } else if (previousStatus === TaskStatus.DONE && dto.status !== TaskStatus.DONE) {
+      await this.projectService.adjustCompletedTaskCount(task.projectId, -1);
+    }
+
+    if (previousStatus !== TaskStatus.DONE && dto.status === TaskStatus.DONE) {
       await this.recordMetric('recordTaskClosed', () =>
         this.cloudWatch.recordTaskClosed(String(task.teamId)),
       );
@@ -327,6 +333,9 @@ export class TasksService {
     }
 
     await this.projectService.adjustTaskCount(task.projectId, -1);
+    if (task.status === TaskStatus.DONE) {
+      await this.projectService.adjustCompletedTaskCount(task.projectId, -1);
+    }
 
     await this.activityLog.write({
       type: 'TASK_DELETED',

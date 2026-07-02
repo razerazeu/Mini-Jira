@@ -44,18 +44,18 @@ export function UserRow({
   };
 
   return (
-    <tr className="border-b border-neutral-700 hover:bg-neutral-800 transition-colors">
+    <tr className="border-b border-[#E4E7EB] hover:bg-[#F4F5F7] transition-colors">
       {/* User Info */}
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-neutral-700 rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-semibold text-neutral-100">
+          <div className="w-10 h-10 bg-[#F4F5F7] rounded-full flex items-center justify-center flex-shrink-0">
+            <span className="text-sm font-semibold text-[#172B4D]">
               {user.name.charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-white truncate">{user.name}</p>
-            <p className="text-sm text-neutral-300 truncate">{user.email}</p>
+            <p className="font-medium text-[#172B4D] truncate">{user.name}</p>
+            <p className="text-sm text-[#6B778C] truncate">{user.email}</p>
           </div>
         </div>
       </td>
@@ -72,7 +72,7 @@ export function UserRow({
             {currentTeam.name}
           </span>
         ) : (
-          <span className="text-neutral-400 text-sm">No team assigned</span>
+          <span className="text-[#6B778C] text-sm">No team assigned</span>
         )}
       </td>
 
@@ -92,7 +92,7 @@ export function UserRow({
                       }
                     }}
                     disabled={isUpdating}
-                    className="px-3 py-2 border border-neutral-700 rounded-lg text-sm bg-neutral-800 text-neutral-100 hover:bg-neutral-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="px-3 py-2 border border-[#E4E7EB] rounded-lg text-sm bg-white text-[#172B4D] hover:bg-[#F4F5F7] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#0052CC]"
                   >
                     <option value="">Assign Team...</option>
                     {teams.map((team) => (
@@ -108,7 +108,7 @@ export function UserRow({
                       <button
                         onClick={() => onReassignTeam(user.userId || user.id || '')}
                         disabled={isUpdating}
-                        className="p-2 text-indigo-300 hover:bg-neutral-800 rounded-lg transition-colors disabled:opacity-50"
+                        className="p-2 text-[#0052CC] hover:bg-[#F4F5F7] rounded-lg transition-colors disabled:opacity-50"
                         title="Reassign to different team"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -118,7 +118,7 @@ export function UserRow({
                     <button
                       onClick={() => onRemoveTeam(user.userId || user.id || '')}
                       disabled={isUpdating}
-                      className="p-2 text-red-400 hover:bg-neutral-800 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-red-400 hover:bg-[#F4F5F7] rounded-lg transition-colors disabled:opacity-50"
                       title="Remove from team"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -127,7 +127,7 @@ export function UserRow({
                 )}
               </>
             ) : (
-              <span className="text-neutral-400 text-sm">Manager - No assignment</span>
+              <span className="text-[#6B778C] text-sm">Manager - No assignment</span>
             )}
           </div>
         </td>

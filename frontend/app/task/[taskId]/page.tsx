@@ -51,7 +51,7 @@ interface AuditLog {
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { token, user, isManager } = useAuth();
+  const { token, user, isManager, loading: authLoading } = useAuth();
   const [task, setTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [auditLog, setAuditLog] = useState<AuditLog[]>([]);
@@ -59,10 +59,15 @@ export default function TaskDetailPage() {
   const [error, setError] = useState('');
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [teamName, setTeamName] = useState('');
+  const [projectName, setProjectName] = useState('');
 
   const taskId = params.taskId as string;
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
     if (!token) {
       router.push('/login');
       return;
@@ -72,7 +77,7 @@ export default function TaskDetailPage() {
       fetchComments();
       fetchAuditLog();
     }
-  }, [token, taskId]);
+  }, [token, taskId, authLoading]);
 
   const fetchTask = async () => {
     try {
@@ -83,6 +88,8 @@ export default function TaskDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setTask(data);
+        fetchTeamName(data.teamId);
+        fetchProjectName(data.projectId);
       } else if (response.status === 404) {
         setError('Task not found');
       } else if (response.status === 403) {
@@ -95,6 +102,36 @@ export default function TaskDetailPage() {
       setError('Network error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTeamName = async (teamId: string) => {
+    if (!teamId) return;
+    try {
+      const response = await fetch(`${API_BASE}/teams/${teamId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTeamName(data.name);
+      }
+    } catch (error) {
+      console.error('Error fetching team:', error);
+    }
+  };
+
+  const fetchProjectName = async (projectId: string) => {
+    if (!projectId) return;
+    try {
+      const response = await fetch(`${API_BASE}/projects/${projectId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProjectName(data.name);
+      }
+    } catch (error) {
+      console.error('Error fetching project:', error);
     }
   };
 
@@ -210,19 +247,19 @@ export default function TaskDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-black">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center items-center h-screen bg-[#F7F8FA]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0052CC]"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen bg-black">
+      <div className="flex flex-col justify-center items-center h-screen bg-[#F7F8FA]">
         <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-2 rounded-md">
           {error}
         </div>
-        <button onClick={() => router.back()} className="mt-4 text-gray-400 hover:text-white">
+        <button onClick={() => router.back()} className="mt-4 text-[#6B778C] hover:text-[#172B4D]">
           Go Back
         </button>
       </div>
@@ -231,20 +268,20 @@ export default function TaskDetailPage() {
 
   if (!task) {
     return (
-      <div className="flex justify-center items-center h-screen bg-black">
-        <p className="text-gray-400">Task not found</p>
+      <div className="flex justify-center items-center h-screen bg-[#F7F8FA]">
+        <p className="text-[#6B778C]">Task not found</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#F7F8FA]">
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <button
             onClick={() => router.back()}
-            className="text-gray-400 hover:text-white transition flex items-center gap-2"
+            className="text-[#6B778C] hover:text-[#172B4D] transition flex items-center gap-2"
           >
             ← Back
           </button>
@@ -259,17 +296,16 @@ export default function TaskDetailPage() {
         </div>
 
         {/* Task Card */}
-        <div className="bg-[#0d0d0d] rounded-md border border-gray-800 overflow-hidden">
-          <div className="p-4 border-b border-gray-800">
+        <div className="bg-white rounded-md border border-[#E4E7EB] overflow-hidden">
+          <div className="p-4 border-b border-[#E4E7EB]">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-xl font-semibold text-white">{task.title}</h1>
-                <p className="text-xs text-gray-500 mt-1">ID: {task.taskId || task.id}</p>
+                <h1 className="text-xl font-semibold text-[#172B4D]">{task.title}</h1>
               </div>
               {nextStatus && (isManager || task.assigneeId === user?.id) && (
                 <button
                   onClick={() => handleUpdateStatus(nextStatus)}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition"
+                  className="px-3 py-1 bg-[#0052CC] hover:bg-[#0747A6] text-white text-sm rounded-md transition"
                 >
                   Move to {getStatusLabel(nextStatus)}
                 </button>
@@ -278,14 +314,14 @@ export default function TaskDetailPage() {
           </div>
 
           {/* Description */}
-          <div className="p-4 border-b border-gray-800">
-            <h3 className="text-sm font-medium text-gray-400 mb-2">Description</h3>
-            <p className="text-white">{task.description || 'No description provided'}</p>
+          <div className="p-4 border-b border-[#E4E7EB]">
+            <h3 className="text-sm font-medium text-[#6B778C] mb-2">Description</h3>
+            <p className="text-[#172B4D]">{task.description || 'No description provided'}</p>
           </div>
 
           {/* Details */}
           {(task.image?.displayUrl || task.image?.thumbnailUrl) && (
-            <div className="border-b border-gray-800">
+            <div className="border-b border-[#E4E7EB]">
               <img
                 src={task.image.thumbnailUrl || task.image.displayUrl}
                 alt={task.title}
@@ -293,76 +329,76 @@ export default function TaskDetailPage() {
               />
             </div>
           )}
-          <div className="p-4 border-b border-gray-800">
+          <div className="p-4 border-b border-[#E4E7EB]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h3 className="text-sm font-medium text-gray-400 mb-1">Team</h3>
-                <p className="text-white">{task.teamName || task.teamId}</p>
+                <h3 className="text-sm font-medium text-[#6B778C] mb-1">Team</h3>
+                <p className="text-[#172B4D]">{teamName || '—'}</p>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-400 mb-1">Project</h3>
-                <p className="text-white">{task.projectName || task.projectId}</p>
+                <h3 className="text-sm font-medium text-[#6B778C] mb-1">Project</h3>
+                <p className="text-[#172B4D]">{projectName || '—'}</p>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-400 mb-1">Deadline</h3>
-                <p className="text-white">
+                <h3 className="text-sm font-medium text-[#6B778C] mb-1">Deadline</h3>
+                <p className="text-[#172B4D]">
                   {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No deadline'}
                 </p>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-400 mb-1">Created By</h3>
-                <p className="text-white">{task.createdByName || task.createdBy}</p>
+                <h3 className="text-sm font-medium text-[#6B778C] mb-1">Created By</h3>
+                <p className="text-[#172B4D]">{task.createdByName || task.createdBy}</p>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-400 mb-1">Created At</h3>
-                <p className="text-white">{new Date(task.createdAt).toLocaleString()}</p>
+                <h3 className="text-sm font-medium text-[#6B778C] mb-1">Created At</h3>
+                <p className="text-[#172B4D]">{new Date(task.createdAt).toLocaleString()}</p>
               </div>
             </div>
           </div>
 
-          <div className="p-4 border-b border-gray-800">
-            <h3 className="text-sm font-medium text-gray-400 mb-3">Audit Log</h3>
+          <div className="p-4 border-b border-[#E4E7EB]">
+            <h3 className="text-sm font-medium text-[#6B778C] mb-3">Audit Log</h3>
             {auditLog.length > 0 ? (
               <div className="space-y-3">
                 {auditLog.map((log) => (
-                  <div key={log.activityId} className="bg-[#111111] p-3 rounded-md border border-gray-800">
-                    <div className="flex items-center justify-between gap-4 text-xs text-gray-400">
+                  <div key={log.activityId} className="bg-[#F4F5F7] p-3 rounded-md border border-[#E4E7EB]">
+                    <div className="flex items-center justify-between gap-4 text-xs text-[#6B778C]">
                       <span>{log.type.replace(/_/g, ' ')}</span>
                       <span>{new Date(log.createdAt).toLocaleString()}</span>
                     </div>
-                    <p className="text-sm text-white mt-2">{log.message || 'Status changed'}</p>
+                    <p className="text-sm text-[#172B4D] mt-2">{log.message || 'Status changed'}</p>
                     {log.actorName && (
-                      <p className="text-xs text-gray-500 mt-1">By {log.actorName}</p>
+                      <p className="text-xs text-[#6B778C] mt-1">By {log.actorName}</p>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500">No audit log entries yet</p>
+              <p className="text-[#6B778C]">No audit log entries yet</p>
             )}
           </div>
 
           {/* Comments */}
           <div className="p-4">
-            <h3 className="text-sm font-medium text-gray-400 mb-3">Comments ({comments.length})</h3>
-            
+            <h3 className="text-sm font-medium text-[#6B778C] mb-3">Comments ({comments.length})</h3>
+
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
               {comments.map((comment) => (
-                <div key={comment.commentId} className="bg-[#1a1a1a] p-3 rounded-md">
+                <div key={comment.commentId} className="bg-[#F4F5F7] p-3 rounded-md">
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs">
+                    <div className="w-6 h-6 rounded-full bg-[#0052CC] flex items-center justify-center text-white text-xs">
                       {comment.userName?.charAt(0).toUpperCase() || 'U'}
                     </div>
-                    <span className="text-white text-sm font-medium">{comment.userName}</span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-[#172B4D] text-sm font-medium">{comment.userName}</span>
+                    <span className="text-xs text-[#6B778C]">
                       {new Date(comment.createdAt).toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-gray-300 text-sm ml-8">{comment.text}</p>
+                  <p className="text-[#172B4D] text-sm ml-8">{comment.text}</p>
                 </div>
               ))}
               {comments.length === 0 && (
-                <p className="text-gray-500 text-sm text-center py-4">No comments yet</p>
+                <p className="text-[#6B778C] text-sm text-center py-4">No comments yet</p>
               )}
             </div>
 
@@ -373,12 +409,12 @@ export default function TaskDetailPage() {
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Write a comment..."
-                className="flex-1 px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-md text-white placeholder-gray-500 focus:ring-1 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 bg-white border border-[#E4E7EB] rounded-md text-[#172B4D] placeholder-[#6B778C] focus:ring-1 focus:ring-[#0052CC]"
               />
               <button
                 type="submit"
                 disabled={submitting || !newComment.trim()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition disabled:opacity-50"
+                className="px-4 py-2 bg-[#0052CC] hover:bg-[#0747A6] text-white rounded-md transition disabled:opacity-50"
               >
                 Post
               </button>

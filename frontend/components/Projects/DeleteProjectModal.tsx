@@ -39,17 +39,17 @@ export function DeleteProjectModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
         {/* Header */}
-        <div className="flex items-center gap-3 p-6 border-b border-gray-200 bg-red-50">
+        <div className="flex items-center gap-3 p-6 border-b border-[#E4E7EB] bg-red-50">
           <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
-          <h2 className="text-lg font-semibold text-gray-900">Delete Project</h2>
+          <h2 className="text-lg font-semibold text-[#172B4D]">Delete Project</h2>
         </div>
 
         {/* Content */}
         <div className="p-6 space-y-4">
-          <p className="text-gray-600">
+          <p className="text-[#172B4D]">
             Are you sure you want to delete <strong>{project.name}</strong>?
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[#6B778C]">
             This action cannot be undone. All associated data will be permanently deleted.
           </p>
 
@@ -63,11 +63,11 @@ export function DeleteProjectModal({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex gap-3 p-6 border-t border-[#E4E7EB] bg-[#F4F5F7]">
           <button
             onClick={onCancel}
             disabled={isDeleting}
-            className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 font-medium"
+            className="flex-1 px-4 py-2 text-[#6B778C] border border-[#E4E7EB] rounded-lg hover:bg-white transition-colors disabled:opacity-50 font-medium"
           >
             Cancel
           </button>
