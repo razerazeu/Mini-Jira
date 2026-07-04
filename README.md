@@ -11,6 +11,7 @@ https://d1b49icyii2w9p.cloudfront.net/
 ```
 
 <img width="1600" height="767" alt="2cd18ac3-48ec-4910-b911-00276a6eabbe" src="https://github.com/user-attachments/assets/ee099970-3a06-4529-b547-a914289f1f07" />
+ATTACHED VIDEO IS THE SAME APPLICATION, WE JUST CHANGED THE COLOR PALETTE.
 
 ## Architecture
 
