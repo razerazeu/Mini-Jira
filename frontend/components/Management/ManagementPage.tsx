@@ -20,9 +20,7 @@ export function ManagementPage() {
   const [removingUser, setRemovingUser] = useState<UserWithTeam | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Filter employees only
-  const employees = users.filter((u) => u.role === 'EMPLOYEE');
-  const filteredUsers = employees.filter(
+  const filteredUsers = users.filter(
     (u) =>
       u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -103,7 +101,7 @@ export function ManagementPage() {
             <div>
               <h1 className="text-3xl font-bold text-[#172B4D]">User Management</h1>
               <p className="text-[#6B778C] mt-1">
-                {filteredUsers.length} {filteredUsers.length === 1 ? 'employee' : 'employees'}
+                {filteredUsers.length} {filteredUsers.length === 1 ? 'user' : 'users'}
               </p>
             </div>
             <button
@@ -152,15 +150,15 @@ export function ManagementPage() {
         )}
 
         {/* Empty state */}
-        {employees.length === 0 ? (
+        {users.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-dashed border-[#E4E7EB]">
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-[#F4F5F7] rounded-full flex items-center justify-center mx-auto">
                 <Users className="w-8 h-8 text-[#0052CC]" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-[#172B4D]">No employees</h3>
-                <p className="text-[#6B778C] mt-1">No employee users found in the system</p>
+                <h3 className="text-lg font-semibold text-[#172B4D]">No users</h3>
+                <p className="text-[#6B778C] mt-1">No users found in the system</p>
               </div>
             </div>
           </div>
@@ -172,7 +170,7 @@ export function ManagementPage() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-[#172B4D]">No results</h3>
-                <p className="text-[#6B778C] mt-1">No employees match your search</p>
+                <p className="text-[#6B778C] mt-1">No users match your search</p>
               </div>
               <button
                 onClick={() => setSearchTerm('')}
